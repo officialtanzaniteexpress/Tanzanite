@@ -1,0 +1,903 @@
+# TANZANITE EXPRESS — COMPLETE FIREBASE + CLOUDFLARE R2 INTEGRATION, REAL-TIME ORDER MANAGEMENT, NOTIFICATIONS, MULTILINGUAL SYSTEM & DATABASE RELIABILITY UPGRADE
+
+## 1. YOUR ROLE AND MAIN OBJECTIVE
+
+Act as a senior full-stack software architect, Firebase specialist, Cloudflare R2 engineer, database architect, cybersecurity engineer, real-time systems engineer, UI/UX engineer, DevOps engineer, and quality assurance engineer.
+
+I ALREADY HAVE AN EXISTING TANZANITE EXPRESS APPLICATION.
+
+Your responsibility is to safely upgrade and integrate the existing application without rebuilding it or losing any existing functionality or information.
+
+The goal is to create a reliable, secure, fully integrated, real-time multi-vendor fashion marketplace.
+
+## 2. CRITICAL PROJECT RULES
+
+- Do NOT create a new application.
+- Do NOT rebuild the existing application.
+- Do NOT delete or overwrite existing code, features, users, products, orders, payments, or records.
+- Do NOT migrate or delete the old Firebase project.
+- Do NOT change production database configuration without approval.
+- Do NOT remove existing application modules.
+- Do NOT expose credentials in frontend code.
+- Do NOT perform destructive database operations.
+- Preserve all existing customer, supplier and administrator accounts.
+- Preserve all existing business workflows.
+- Maintain backward compatibility.
+
+FIRST perform a complete READ-ONLY audit of the existing project.
+
+Return the audit report and wait for approval before implementing changes.
+
+## 3. COMPLETE EXISTING SYSTEM AUDIT
+
+Inspect the entire existing repository and application.
+
+Identify:
+
+1. Frontend framework and architecture.
+2. Backend framework and runtime.
+3. Firebase project configuration.
+4. Firebase Authentication implementation.
+5. Firestore collections and document structures.
+6. Existing Firebase Security Rules.
+7. Firebase Storage implementation.
+8. Existing image upload and retrieval workflows.
+9. Supplier product submission workflows.
+10. Admin product approval workflows.
+11. Customer ordering and checkout workflows.
+12. Supplier order management workflows.
+13. Existing notification implementation.
+14. Existing language and translation implementation.
+15. Existing user roles and permissions.
+16. Existing real-time listeners and synchronization.
+17. Deployment configuration.
+18. Existing environment variables and secrets.
+19. Existing database backup procedures.
+20. All modules that depend on shared data.
+
+Do not expose secret values in audit reports.
+
+Return:
+- Current system architecture.
+- Existing database architecture.
+- Existing order lifecycle.
+- Existing notification architecture.
+- Existing language architecture.
+- Existing image storage architecture.
+- Identified weaknesses and integration risks.
+- Files that require modification.
+- Backup and rollback strategy.
+- Recommended implementation stages.
+
+STOP after the audit. Do not modify code until the audit is reviewed and approved.
+
+## 4. TARGET SYSTEM ARCHITECTURE
+
+Maintain Firebase as the main application data platform.
+
+Firebase responsibilities:
+
+- Authentication.
+- Firestore database.
+- Customer accounts.
+- Supplier accounts.
+- Admin accounts.
+- Product information.
+- Product prices.
+- Orders and order history.
+- Payments and payment verification.
+- Notifications.
+- Support tickets.
+- Audit logs.
+- Application settings.
+- Language preferences.
+- Supplier delivery information.
+- Customer delivery information.
+
+Cloudflare R2 responsibilities:
+
+- New product image uploads.
+- Supplier product galleries.
+- Product cover images.
+- Approved application media.
+- Other authorized uploaded files.
+
+Cloudflare R2 configuration:
+
+- Bucket: tanzanite-express-products
+- Account ID: 906ee1a25ebd7f22bc790960e1fed011
+- Endpoint: https://906ee1a25ebd7f22bc790960e1fed011.r2.cloudflarestorage.com
+- Region: auto
+- Storage class: Standard
+
+Use server-side secrets only:
+
+- R2_ACCOUNT_ID
+- R2_BUCKET_NAME
+- R2_ENDPOINT
+- R2_ACCESS_KEY_ID
+- R2_SECRET_ACCESS_KEY
+
+Never hardcode or expose credentials.
+
+## 5. SAFE BACKUP AND DATA PRESERVATION
+
+Before making changes:
+
+- Create a dedicated GitHub backup branch.
+- Preserve the existing working version.
+- Document current Firebase configuration.
+- Establish a suitable Firestore backup/export strategy.
+- Preserve existing Firebase Storage objects.
+- Preserve existing image URLs.
+- Preserve all user accounts.
+- Preserve existing orders and payment records.
+- Preserve notification histories.
+- Preserve existing language settings.
+
+Implement additive changes wherever possible.
+
+Never delete old images or old database records during R2 integration.
+
+## 6. SECURE CLOUDFLARE R2 INTEGRATION
+
+Use the existing backend architecture.
+
+If the backend uses Node.js, use the official AWS SDK for JavaScript v3 S3 client and presigner packages compatible with Cloudflare R2.
+
+Implement:
+
+- Secure R2 client initialization.
+- Server-side environment validation.
+- Firebase ID token verification.
+- Role-based authorization.
+- Short-lived presigned upload URLs.
+- Secure upload confirmation.
+- File existence verification.
+- Secure object deletion.
+- Ownership verification.
+
+Suppliers must only upload images associated with their own submissions.
+
+Administrators may review and manage product images according to existing permissions.
+
+Never trust user roles or user IDs supplied only by the browser.
+
+## 7. PRODUCT IMAGE UPLOAD AND DELIVERY
+
+Support:
+
+- JPEG/JPG.
+- PNG.
+- WebP.
+
+Implement:
+
+- File size limits.
+- MIME type validation.
+- Unique object keys.
+- Malicious file protection.
+- Multiple product image uploads.
+- Product image previews.
+- Image reordering.
+- Cover image selection.
+- Upload progress.
+- Retry after failed uploads.
+
+Use object keys such as:
+
+products/{supplierUid}/{productId}/{uniqueFileName}
+
+Do not allow arbitrary object paths.
+
+Do not enable unrestricted public bucket access.
+
+Use a secure image delivery method such as an approved custom domain or secure backend/Worker delivery.
+
+Do not store temporary presigned URLs as permanent Firestore image references.
+
+Existing Firebase Storage images must continue working.
+
+## 8. CUSTOMER ORDER MANAGEMENT — COMPLETE WORKFLOW
+
+This is a critical feature.
+
+Inspect and improve the entire customer ordering workflow.
+
+When a customer successfully places an order:
+
+1. Generate a unique order number automatically.
+2. Save the order permanently in Firestore.
+3. Record the customer ID.
+4. Record the supplier ID.
+5. Record the relevant product IDs.
+6. Record product quantities.
+7. Record agreed prices and totals.
+8. Record the customer's delivery information.
+9. Record the customer's contact phone number.
+10. Record the supplier's contact phone number.
+11. Record order creation date and time.
+12. Record the initial order status.
+
+The generated order number must be unique and must never be reused.
+
+Example format:
+
+TE-2026-000001
+
+Use a collision-resistant generation method. Do not rely on simple frontend counters.
+
+### 8.1 Customer order confirmation
+
+After successfully placing an order:
+
+- Show a successful order confirmation screen.
+- Display the generated order number.
+- Display the order summary.
+- Display the supplier's business/contact phone number where authorized.
+- Display the customer's own contact number.
+- Show the current order status.
+- Provide a way to open order details.
+- Send a persistent notification confirming that the order was received.
+
+Do not tell the customer an order was placed if the database transaction failed.
+
+### 8.2 Supplier order notification
+
+When a customer places an order:
+
+- Notify the relevant supplier immediately.
+- Display the new order in the supplier dashboard.
+- Display the unique order number.
+- Display the customer's name and contact phone number where necessary for fulfilling that order.
+- Display the customer's delivery details.
+- Display the ordered products and quantities.
+- Display the agreed supplier payment information according to existing business rules.
+- Provide order acceptance and management actions.
+
+Suppliers must not see other suppliers' private customer orders.
+
+### 8.3 Supplier acceptance
+
+When the supplier accepts an order:
+
+- Update the order status in Firestore.
+- Record supplier acceptance date and time.
+- Notify the customer.
+- Show the updated status in both dashboards.
+
+If the supplier rejects or cannot fulfil an order, record the reason and notify the customer and Admin.
+
+### 8.4 Delivery confirmation by supplier
+
+When the supplier has delivered the order:
+
+Provide a clear action:
+
+"Mark Order as Delivered"
+
+Before accepting this action:
+
+- Verify the supplier is authorized for this order.
+- Verify the current order status.
+- Record delivery date and time.
+- Record the supplier's delivery confirmation.
+- Update the order status to awaiting customer confirmation.
+
+IMPORTANT:
+
+Supplier delivery confirmation must NOT automatically mark the order as fully completed.
+
+The customer must be given an opportunity to confirm actual receipt.
+
+### 8.5 Customer delivery confirmation
+
+When the supplier marks an order as delivered:
+
+Immediately send the customer a persistent notification.
+
+Example notification:
+
+"Your order TE-2026-000001 has been marked as delivered by the supplier. Please confirm whether you have received your order."
+
+Display two appropriate actions:
+
+- "Confirm I Received My Order"
+- "Report a Delivery Problem"
+
+When the customer confirms receipt:
+
+- Verify that the customer owns the order.
+- Verify the order is awaiting customer confirmation.
+- Record the customer's confirmation.
+- Record confirmation date and time.
+- Update the order status to COMPLETED.
+- Notify the supplier.
+- Notify Admin.
+- Preserve the complete order history.
+
+If the customer reports a problem:
+
+- Do not automatically complete the order.
+- Create a delivery dispute or support case.
+- Notify Admin and the supplier.
+- Preserve all relevant records.
+- Allow Admin to investigate and resolve the issue.
+
+Do not allow unauthorized users to confirm delivery.
+
+### 8.6 Order status system
+
+Implement a consistent order state machine using the existing architecture.
+
+Recommended statuses:
+
+- PENDING
+- ACCEPTED
+- PROCESSING
+- READY_FOR_DELIVERY
+- OUT_FOR_DELIVERY
+- AWAITING_CUSTOMER_CONFIRMATION
+- COMPLETED
+- REJECTED
+- CANCELLED
+- DELIVERY_DISPUTE
+
+Only allow valid status transitions.
+
+Record:
+- Previous status.
+- New status.
+- User performing the action.
+- User role.
+- Timestamp.
+- Optional reason or notes.
+
+Do not allow customers, suppliers or administrators to bypass authorization rules.
+
+## 9. CUSTOMER AND SUPPLIER CONTACT INFORMATION
+
+Make contact information easy to access during order fulfilment.
+
+For each relevant order:
+
+### Customer dashboard
+
+Display:
+
+- Order number.
+- Supplier name.
+- Supplier contact phone number.
+- Product details.
+- Order status.
+- Delivery progress.
+- Order date.
+- Delivery confirmation action.
+
+### Supplier dashboard
+
+Display:
+
+- Order number.
+- Customer name.
+- Customer contact phone number.
+- Customer delivery information.
+- Product details.
+- Quantities.
+- Order status.
+- Delivery confirmation action.
+
+### Privacy and security
+
+- Only authorized parties involved in a specific order may access its contact information.
+- Do not display private customer phone numbers publicly.
+- Do not expose contact information to unrelated suppliers.
+- Do not expose contact information to unauthenticated guests.
+- Validate all access on the backend and through appropriate Firestore Security Rules.
+- Log sensitive order access where appropriate.
+- Preserve applicable privacy and data retention requirements.
+
+Provide click-to-call functionality on mobile devices where appropriate.
+
+## 10. REAL-TIME NOTIFICATION SYSTEM
+
+Build a reliable persistent notification system.
+
+Notifications must be generated from actual successful database events, not merely from frontend button clicks.
+
+### Customer notifications
+
+Notify customers when:
+
+- An order is successfully placed.
+- A supplier accepts an order.
+- A supplier rejects an order.
+- An order is being processed.
+- An order is ready for delivery.
+- An order is out for delivery.
+- A supplier marks an order as delivered.
+- Customer confirmation is required.
+- A delivery problem is reported.
+- An order is completed.
+- A payment is verified or rejected, where applicable.
+
+### Supplier notifications
+
+Notify suppliers when:
+
+- A new customer order is received.
+- An order is cancelled.
+- A customer reports a delivery problem.
+- A customer confirms receipt.
+- Admin changes an order requiring supplier attention.
+
+### Admin notifications
+
+Notify administrators when:
+
+- New orders require attention.
+- Suppliers reject orders.
+- Delivery disputes are reported.
+- Important payment events occur.
+- Critical system synchronization failures occur.
+- Important operational actions require review.
+
+### Notification requirements
+
+Each notification must contain:
+
+- Unique notification ID.
+- Recipient user ID.
+- Related order ID, where applicable.
+- Notification type.
+- Title.
+- Message.
+- Created timestamp.
+- Read/unread status.
+- Related application navigation destination.
+- Optional action metadata.
+
+Implement:
+
+- Real-time notification updates.
+- Unread notification counters.
+- Notification history.
+- Mark as read.
+- Mark all as read.
+- Relevant notification actions.
+- Persistent storage in Firestore.
+- Retry handling for failed notification processing.
+- Protection against duplicate notifications.
+
+Notifications must remain available after logout and login.
+
+A notification must not disappear merely because the user refreshed the page.
+
+Separate in-app notifications from optional push notifications.
+
+If Firebase Cloud Messaging is already available, preserve and improve it. If not, inspect the existing architecture before adding it.
+
+Do not claim push notifications work until browser/mobile permissions and actual delivery have been tested.
+
+## 11. REAL-TIME DATABASE AND SYSTEM COMMUNICATION
+
+The application must keep all relevant modules synchronized in real time.
+
+Implement appropriate Firestore real-time listeners for:
+
+- Customer orders.
+- Supplier orders.
+- Admin order monitoring.
+- Product updates.
+- Product approval status.
+- Notifications.
+- Delivery status.
+- Payment status.
+- Relevant account updates.
+
+When a supplier updates an order, the customer and Admin dashboards must receive the update without requiring manual page refresh.
+
+When Admin approves a product, the public storefront must receive the updated product state.
+
+When an order changes status, every authorized dashboard must reflect the same state.
+
+Use:
+
+- Firestore onSnapshot listeners where appropriate.
+- Server-side events for critical business operations.
+- Atomic transactions for related updates.
+- Idempotent processing.
+- Consistent document identifiers.
+- Server timestamps.
+- Retry mechanisms.
+- Safe reconnection handling.
+- Listener cleanup to avoid memory leaks.
+
+Do not create unnecessary listeners that increase costs.
+
+## 12. STRONG DATABASE RELIABILITY AND CRASH RESILIENCE
+
+Build a highly reliable database and application architecture.
+
+Do not promise that the system can never crash. Instead, implement safeguards that prevent common failures and support recovery.
+
+Requirements:
+
+### Database integrity
+
+- Use atomic transactions for related business operations.
+- Prevent duplicate order creation.
+- Prevent duplicate payments and confirmations.
+- Use server-generated timestamps.
+- Validate all important data.
+- Enforce required fields.
+- Protect critical documents against unauthorized modification.
+- Maintain referential consistency between users, products, suppliers and orders.
+
+### Reliability
+
+- Implement automatic retry with controlled exponential backoff.
+- Implement idempotency keys for critical operations.
+- Handle network interruptions.
+- Handle Firebase connection errors.
+- Handle R2 upload failures.
+- Handle expired authentication tokens.
+- Handle concurrent updates safely.
+- Handle partial operation failures.
+- Avoid losing unsaved customer or supplier actions.
+
+### Offline and reconnection support
+
+Where appropriate:
+
+- Support Firestore offline persistence.
+- Show offline/online connection status.
+- Queue eligible operations safely.
+- Synchronize queued operations after reconnection.
+- Prevent duplicate operations during reconnection.
+- Clearly indicate pending and failed operations.
+
+Never falsely show a payment, order or delivery confirmation as successful when the server has not confirmed it.
+
+### Monitoring
+
+Provide appropriate system monitoring for:
+
+- Database errors.
+- Failed uploads.
+- Failed notifications.
+- Failed order operations.
+- Authentication failures.
+- Synchronization failures.
+- Unusual permission errors.
+- Backend errors.
+
+Create useful Admin-facing operational diagnostics without exposing secrets or private credentials.
+
+### Backups and recovery
+
+Establish scheduled backup procedures appropriate to the selected Firebase plan.
+
+Protect:
+- Firestore data.
+- Product metadata.
+- User records.
+- Orders.
+- Payment records.
+- Notification histories.
+- R2 product images.
+- Application configuration.
+
+Document restoration procedures and test recovery using a safe test environment.
+
+Do not describe the database as fully backed up until actual backup jobs and restoration tests are verified.
+
+## 13. COMPLETE MULTILINGUAL LANGUAGE SYSTEM
+
+This is another critical requirement.
+
+Inspect the entire application and audit every page, module and component for language support.
+
+The application must support at minimum:
+
+- English.
+- Kiswahili.
+
+The language selector must work throughout the entire application.
+
+### 13.1 Complete translation coverage
+
+Inspect and translate every visible user interface element, including:
+
+- Homepage.
+- Navigation menus.
+- Headers.
+- Footers.
+- Product listings.
+- Product details.
+- Supplier dashboard.
+- Customer dashboard.
+- Admin dashboard.
+- Login and registration.
+- Forms.
+- Input labels.
+- Buttons.
+- Dropdowns.
+- Filters.
+- Search.
+- Shopping cart.
+- Checkout.
+- Payment instructions.
+- Order details.
+- Order tracking.
+- Order statuses.
+- Notifications.
+- Notification history.
+- Support tickets.
+- Chatbot interface.
+- Error messages.
+- Success messages.
+- Empty states.
+- Loading states.
+- Confirmation dialogs.
+- Validation messages.
+- Delivery information.
+- Settings.
+- Reports.
+- Mobile navigation.
+
+Do not leave untranslated text in hidden pages, popups or less frequently used modules.
+
+### 13.2 Dynamic language switching
+
+When a user changes the language:
+
+- The entire application must change immediately.
+- All currently visible text must update.
+- The current page must remain open.
+- The user's current form data must not disappear.
+- The current cart must remain unchanged.
+- The current order state must remain unchanged.
+- The user must not be forced to log out.
+- No manual page refresh should be required.
+
+Persist the user's language preference.
+
+For authenticated users, synchronize the preference with their user profile in Firestore.
+
+For guests, use suitable local persistence.
+
+### 13.3 Notifications and order messages
+
+Notifications must use the recipient's preferred language.
+
+For example:
+
+English:
+"Your order has been marked as delivered. Please confirm receipt."
+
+Kiswahili:
+"Oda yako imethibitishwa kuwa imefikishwa. Tafadhali thibitisha kama umeipokea."
+
+Order statuses, buttons and instructions must also be translated.
+
+### 13.4 Translation architecture
+
+Use a centralized translation system.
+
+Avoid hardcoded visible strings throughout components.
+
+Use consistent translation keys and reusable language dictionaries.
+
+Provide a fallback language for missing translations.
+
+Audit the application for missing translation keys.
+
+Do not translate product names, customer names, supplier names, order numbers or other user-generated business data automatically unless the user explicitly requests translation.
+
+## 14. FIRESTORE COMPATIBILITY
+
+Preserve existing Firestore collections and structures wherever possible.
+
+Add backward-compatible fields only where required, such as:
+
+- storageProvider
+- objectKey
+- contentType
+- imageSize
+- uploadedAt
+- orderNumber
+- deliveryStatus
+- supplierDeliveryConfirmedAt
+- customerReceiptConfirmedAt
+- customerLanguage
+- notificationType
+- notificationReadAt
+
+Adapt these examples to the actual existing schema rather than blindly creating duplicate fields.
+
+Do not rename or remove existing fields without approval.
+
+## 15. SECURITY AND ROLE-BASED ACCESS CONTROL
+
+Preserve existing role architecture.
+
+Implement strict access rules for:
+
+- Customers.
+- Suppliers.
+- Administrators.
+- Guests.
+
+Customers may access only their own orders and notifications.
+
+Suppliers may access only orders assigned to them and the customer information necessary to fulfil those orders.
+
+Administrators may access operational records according to their authorized permissions.
+
+Verify sensitive operations on the backend.
+
+Do not trust frontend-only role checks.
+
+Do not expose passwords, password hashes, service account keys, API secrets, or authentication tokens in Admin dashboards, logs, or reports.
+
+Protect against:
+- Unauthorized order access.
+- Unauthorized delivery confirmation.
+- Unauthorized customer contact access.
+- Unauthorized image deletion.
+- Duplicate order creation.
+- Malicious uploads.
+- Privilege escalation.
+- Firestore data manipulation.
+
+## 16. REQUIRED END-TO-END TESTS
+
+Perform real tests using a safe test environment.
+
+### R2 tests
+
+1. Supplier logs in.
+2. Supplier uploads multiple images.
+3. Images are saved in R2.
+4. Metadata is saved in Firestore.
+5. Admin can view submitted images.
+6. Admin approves the product.
+7. Product appears in the storefront.
+8. Customers can view product images.
+9. Images persist after refresh.
+10. Existing Firebase Storage images continue working.
+
+### Order tests
+
+1. Customer places an order.
+2. Unique order number is generated.
+3. Order is saved in Firestore.
+4. Customer receives an order confirmation notification.
+5. Supplier receives a new order notification.
+6. Supplier can see the customer's authorized contact number.
+7. Customer can see the supplier's authorized contact number.
+8. Supplier accepts the order.
+9. Customer receives an acceptance notification.
+10. Supplier marks the order as delivered.
+11. Customer receives a delivery confirmation notification.
+12. Customer confirms receipt.
+13. Order changes to COMPLETED.
+14. Supplier and Admin receive the appropriate notifications.
+15. Customer and supplier can view the complete order history.
+16. Delivery dispute workflow works correctly.
+17. Unauthorized users cannot access or modify another user's orders.
+
+### Real-time tests
+
+1. Open customer and supplier dashboards simultaneously.
+2. Place an order.
+3. Verify supplier dashboard updates without manual refresh.
+4. Accept the order.
+5. Verify customer dashboard updates.
+6. Mark delivery.
+7. Verify customer notification appears immediately.
+8. Confirm receipt.
+9. Verify all authorized dashboards reflect the completed order.
+
+### Language tests
+
+1. Open every major application module in English.
+2. Switch to Kiswahili.
+3. Verify all visible text changes.
+4. Switch back to English.
+5. Verify all text changes back.
+6. Verify no form data is lost.
+7. Verify cart and order information remain intact.
+8. Verify notifications use the recipient's preferred language.
+9. Verify mobile and desktop language switching.
+10. Verify missing translations are reported.
+
+### Reliability tests
+
+Test:
+- Internet interruption.
+- Reconnection.
+- Duplicate requests.
+- Failed image uploads.
+- Expired authentication sessions.
+- Concurrent order updates.
+- Failed notification processing.
+- Firestore permission errors.
+- R2 permission errors.
+- Database restoration procedures.
+
+Report actual test results. Do not claim untested functionality works.
+
+## 17. IMPLEMENTATION STAGES
+
+After the initial audit has been reviewed and approved, implement in these stages:
+
+STAGE 1: Backup and architecture verification.
+
+STAGE 2: Secure R2 backend integration.
+
+STAGE 3: Test product image uploads without changing existing production uploads.
+
+STAGE 4: Integrate R2 image delivery while preserving old Firebase Storage images.
+
+STAGE 5: Improve order numbering and customer/supplier contact display.
+
+STAGE 6: Implement complete order delivery and customer receipt confirmation.
+
+STAGE 7: Implement persistent real-time notifications.
+
+STAGE 8: Complete the English and Kiswahili translation audit.
+
+STAGE 9: Improve database reliability, monitoring and recovery.
+
+STAGE 10: Perform end-to-end integration and security tests.
+
+STAGE 11: Review deployment readiness.
+
+Do not skip stages.
+
+Do not switch production workflows to new implementations before successful testing and approval.
+
+## 18. FINAL ACCEPTANCE CRITERIA
+
+The upgrade is successful only when:
+
+- Existing user accounts remain accessible.
+- Existing products and images remain available.
+- Firebase Authentication continues working.
+- Firestore data remains intact.
+- New images upload successfully to R2.
+- Existing Firebase Storage images still display.
+- Customers receive order notifications.
+- Suppliers receive order notifications.
+- Order numbers are generated reliably.
+- Relevant customer and supplier phone numbers are accessible securely.
+- Supplier delivery confirmation triggers a customer notification.
+- Customers can confirm actual receipt.
+- Delivery disputes are recorded and handled.
+- All relevant dashboards synchronize in real time.
+- English and Kiswahili work across the entire application.
+- Database backups and recovery procedures are documented and tested.
+- No existing feature has been silently removed.
+
+## 19. FINAL REPORT
+
+After each implementation stage, report:
+
+1. Files changed.
+2. Existing features preserved.
+3. New features implemented.
+4. Database changes.
+5. Security changes.
+6. Tests performed.
+7. Tests passed.
+8. Tests failed.
+9. Remaining issues.
+10. Rollback instructions.
+
+Be honest about limitations and incomplete work.
+
+Do not claim that the application is crash-proof or that data is permanently protected without verified backup and recovery procedures.
+
+THE HIGHEST PRIORITY IS TO PRESERVE THE EXISTING TANZANITE EXPRESS APPLICATION, ALL EXISTING DATA, USERS, ORDERS, PAYMENTS, IMAGES AND FEATURES WHILE BUILDING A SECURE, RELIABLE, REAL-TIME AND FULLY MULTILINGUAL SYSTEM.

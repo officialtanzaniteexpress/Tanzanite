@@ -1,0 +1,1079 @@
+# TANZANITE EXPRESS — COMPLETE FIREBASE PROJECT SWITCH, FRESH DATABASE SETUP, AUTHENTICATION, FIRESTORE, CLOUDFLARE R2, SECURITY, DATABASE RELIABILITY & FULL SYSTEM INTEGRATION
+
+## 1. ROLE AND MAIN OBJECTIVE
+
+Act as a senior full-stack engineer, Firebase architect, database architect, Cloudflare R2 specialist, cybersecurity engineer, DevOps engineer, backend engineer, and quality assurance engineer.
+
+I ALREADY HAVE AN EXISTING TANZANITE EXPRESS APPLICATION.
+
+Your task is to safely switch the existing application to my new Firebase project, establish a fresh database and user environment, securely integrate Cloudflare R2, and ensure all existing application modules work together reliably.
+
+**IMPORTANT:**
+- Do NOT create a new application.
+- Do NOT rebuild the application from scratch.
+- Do NOT delete existing application features.
+- Do NOT replace the existing design or user interface unnecessarily.
+- Do NOT delete existing source code.
+- Preserve the existing application architecture and business logic wherever possible.
+- Integrate the new Firebase project into the existing application.
+
+The goal is a fresh backend and database, NOT a replacement application.
+
+---
+
+# 2. FINAL AUTHORITATIVE FIREBASE PROJECT DECISION
+
+I have made my final decision.
+
+The existing TANZANITE EXPRESS application must use ONLY the following Firebase project:
+
+**Official Firebase project details:**
+
+- Project Name: Tanzanite Express
+- Project ID: `tanzanite-express`
+- Project Number: `175219764302`
+- Firebase Web App nickname: `Tanzanite Express Web`
+
+The old Firebase project:
+
+`strategic-highlander-1c62f`
+
+is no longer the target Firebase project.
+
+Requirements:
+- Switch the application's active Firebase configuration to `tanzanite-express`.
+- Do not use the old project for new application operations.
+- Do not accidentally initialize Firebase using the old project.
+- Inspect all existing Firebase references throughout the repository.
+- Identify and update references that point to the old project.
+- Ensure frontend and backend use the same authoritative Firebase project.
+- Verify Firebase ID token issuer and audience against the new project.
+- Verify the backend Admin SDK connects to the correct project.
+- Ensure Cloud Functions, if used, target the correct project.
+- Check environment variables, configuration files, deployment settings, and CI/CD configuration.
+
+Never silently leave some application modules connected to the old project.
+
+Do NOT delete, disable, or modify the old Firebase project itself.
+
+---
+
+# 3. FRESH START — NEW USERS AND NEW BUSINESS DATABASE
+
+I want TANZANITE EXPRESS to start with a clean backend environment.
+
+The new Firebase project must support:
+
+- New customer accounts.
+- New supplier accounts.
+- A new Super Admin account.
+- New customer profiles.
+- New supplier profiles.
+- New products.
+- New product categories.
+- New orders.
+- New payment records.
+- New notifications.
+- New support tickets.
+- New reviews.
+- New application settings.
+- New audit logs.
+
+Do not import old users, products, orders, payments, or business records unless I explicitly request it.
+
+The new Firestore database is currently empty.
+
+Preserve the existing application's:
+- Source code.
+- Design.
+- Pages.
+- Dashboards.
+- Components.
+- Product workflows.
+- Order workflows.
+- Payment workflows.
+- Supplier functionality.
+- Admin functionality.
+- Customer functionality.
+- Existing business rules.
+
+Starting with a fresh database does NOT authorize deleting or rebuilding the existing application.
+
+---
+
+# 4. NEW SUPER ADMIN ACCOUNT AND SECURE BOOTSTRAP
+
+The intended Super Admin email is:
+
+`mahelaissa1@gmail.com`
+
+This email must remain the designated Super Admin email.
+
+Important:
+- Do not assume an Authentication account already exists in the new Firebase project.
+- Do not automatically grant Super Admin permissions merely because a user submits this email during registration.
+- Do not hardcode passwords.
+- Do not create duplicate Super Admin accounts.
+- Do not expose privileged role assignment to the frontend.
+
+Implement a secure, one-time Super Admin bootstrap process.
+
+Requirements:
+
+1. Authenticate the user through the new Firebase Authentication project.
+2. Verify the authenticated user's email.
+3. Verify the email is verified where required.
+4. Verify the account against a server-controlled bootstrap configuration.
+5. Assign the Super Admin role securely on the backend using Firebase Admin SDK.
+6. Use Firebase custom claims or another secure server-controlled role mechanism.
+7. Prevent ordinary users from granting themselves Admin or Supplier privileges.
+8. Prevent repeated or unauthorized bootstrap operations.
+9. Log the bootstrap event in the audit log.
+10. Protect all Admin-only backend routes.
+
+The Admin dashboard must never display:
+- Passwords.
+- Password hashes.
+- Private API keys.
+- Service account private keys.
+- Authentication secrets.
+- Private tokens.
+
+---
+
+# 5. FIREBASE AUTHENTICATION INTEGRATION
+
+Firebase Authentication has already been configured in the new project.
+
+Enabled providers:
+- Email/Password.
+- Google Sign-In.
+
+Integrate the existing application with these providers.
+
+Implement and test:
+
+- Customer registration.
+- Supplier registration.
+- Email/password login.
+- Google Sign-In.
+- Logout.
+- Password reset.
+- Email verification where required.
+- Session persistence.
+- Authentication state monitoring.
+- Expired token handling.
+- Secure Firebase ID token verification on the backend.
+- Account/profile synchronization with Firestore.
+- Proper authentication error messages.
+
+All new accounts must be created in the new Firebase project.
+
+Preserve correct relationships between Firebase Authentication UIDs and Firestore user profiles.
+
+Prevent:
+- Duplicate user profiles.
+- Duplicate registration records.
+- Unauthorized account role changes.
+- Authentication state inconsistencies.
+- Cross-user account access.
+
+Ensure existing application authentication components are integrated rather than unnecessarily replaced.
+
+---
+
+# 6. FIREBASE WEB APP CONFIGURATION
+
+Use the Firebase Web App registered in the new project.
+
+The confirmed project information is:
+
+- Project ID: `tanzanite-express`
+- Project Number: `175219764302`
+- Auth Domain: `tanzanite-express.firebaseapp.com`
+- Storage Bucket: `tanzanite-express.firebasestorage.app`
+- App ID: `1:175219764302:web:f7cc5918f77b01e170a71f`
+- Measurement ID: `G-H4ZTJQGS2P`
+
+Use the actual Firebase Web App configuration from Firebase Console.
+
+Do not invent missing configuration values.
+
+If a configuration value is unavailable, request the missing information or explain how I can retrieve it.
+
+Requirements:
+- Use the Firebase modular JavaScript SDK where appropriate.
+- Avoid duplicate Firebase initialization.
+- Reuse a single initialized Firebase application instance.
+- Configure Authentication and Firestore using the same Firebase app.
+- Keep server-side Firebase Admin SDK configuration separate from frontend configuration.
+- Do not put service account credentials in frontend environment variables.
+- Validate the Firebase configuration during application startup.
+
+Do not expose service account private keys or other backend secrets.
+
+---
+
+# 7. CLOUD FIRESTORE DATABASE ARCHITECTURE
+
+Cloud Firestore has already been created successfully in the new project.
+
+Current database status:
+- Project: `tanzanite-express`
+- Database: Newly created.
+- Collections: Empty.
+- Current Security Rules: Deny all reads and writes.
+
+Current rules:
+
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /{document=**} {
+          allow read, write: if false;
+        }
+      }
+    }
+
+Do not leave the application without functional database access after integration.
+
+However, do not publish replacement rules before reviewing the actual application schema and testing the rules.
+
+First inspect the existing application data models and propose an appropriate Firestore architecture.
+
+Consider these business collections:
+
+- `users`
+- `suppliers`
+- `products`
+- `categories`
+- `orders`
+- `payments`
+- `notifications`
+- `supportTickets`
+- `reviews`
+- `settings`
+- `auditLogs`
+
+These are proposed logical collections, not instructions to create duplicate or unnecessary collections.
+
+Use the existing application models wherever appropriate.
+
+For every collection, define:
+- Document structure.
+- Required fields.
+- Optional fields.
+- Data types.
+- Ownership.
+- Access permissions.
+- Validation requirements.
+- Relationships with other documents.
+- Index requirements.
+- Server-side operations.
+
+Use consistent timestamps and document identifiers.
+
+Implement:
+- Atomic Firestore transactions.
+- Batch writes where appropriate.
+- Server-side validation.
+- Duplicate prevention.
+- Idempotency.
+- Pagination.
+- Efficient queries.
+- Real-time listeners.
+- Proper error handling.
+- Retry strategies.
+- Data consistency checks.
+
+Avoid unnecessary reads and writes that increase operating costs.
+
+---
+
+# 8. CLOUDFLARE R2 STORAGE INTEGRATION
+
+The existing Cloudflare R2 bucket must be retained.
+
+**Confirmed R2 configuration:**
+
+- Bucket Name: `tanzanite-express-products`
+- Account ID: `906ee1a25ebd7f22bc790960e1fed011`
+- S3 Endpoint: `https://906ee1a25ebd7f22bc790960e1fed011.r2.cloudflarestorage.com`
+- Region: `auto`
+- Storage Class: Standard.
+- Public Access: Disabled.
+
+Existing server-side environment variable names:
+
+- `R2_ACCOUNT_ID`
+- `R2_BUCKET_NAME`
+- `R2_ENDPOINT`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+
+The secrets have already been configured in the project environment.
+
+Never request that I paste the secret values into chat.
+
+Never expose R2 credentials in:
+- Frontend JavaScript.
+- Browser network responses.
+- Public GitHub repositories.
+- Client-side environment variables.
+- Application logs.
+- Admin dashboards.
+
+## 8.1 Required SDK
+
+Use:
+
+- `@aws-sdk/client-s3`
+- `@aws-sdk/s3-request-presigner`
+
+Implement secure server-side R2 operations.
+
+## 8.2 Secure Supplier Uploads
+
+Require:
+1. Valid Firebase ID token.
+2. Verified authenticated user.
+3. Supplier role authorization.
+4. Supplier ownership validation.
+5. Valid product ID.
+6. Validated image MIME type.
+7. Maximum file size enforcement.
+8. Unique server-generated filename.
+
+Use this object-key structure:
+
+`products/{supplierUid}/{productId}/{uniqueFileName}`
+
+Generate short-lived presigned PUT URLs.
+
+Do not allow suppliers to upload files into another supplier's directory.
+
+## 8.3 Upload Verification
+
+After uploading:
+- Use `HeadObject`.
+- Verify the object exists.
+- Verify the object metadata and expected size.
+- Verify the content type.
+- Verify the object key belongs to the authorized supplier.
+- Only then allow the relevant product image reference to be saved or confirmed in Firestore.
+
+Prevent unverified upload references from being treated as valid product images.
+
+## 8.4 Secure Deletion
+
+Implement ownership-checked object deletion.
+
+Before deletion:
+- Authenticate the request.
+- Verify the user's role.
+- Verify supplier ownership or Admin authorization.
+- Confirm the object key belongs to the authorized product.
+- Prevent arbitrary bucket object deletion.
+
+Never allow a user to delete another supplier's product images.
+
+## 8.5 Media Delivery
+
+Keep the R2 bucket private.
+
+Use secure backend media delivery or appropriately authorized signed access.
+
+Do not expose permanent unrestricted private object access.
+
+Store stable R2 object keys in Firestore, not expiring presigned URLs.
+
+---
+
+# 9. EXISTING IMAGE AND MEDIA BACKWARD COMPATIBILITY
+
+Although the new backend starts fresh, the existing application may still contain old media references.
+
+Preserve the existing image-handling functionality.
+
+Requirements:
+- Do not delete old Firebase Storage images.
+- Do not delete existing local media.
+- Do not overwrite existing image URLs.
+- Maintain backward compatibility with existing image references.
+- Continue supporting old Firebase Storage URLs where needed.
+- Use R2 for new product image uploads.
+- Ensure existing UI components can display both supported media types.
+- Do not replace media references until the new upload and delivery workflow has passed testing.
+
+Do not confuse a fresh business database with permission to delete old media assets.
+
+---
+
+# 10. COMPLETE CUSTOMER, SUPPLIER AND ADMIN WORKFLOWS
+
+Connect the new Firebase services to all existing application modules.
+
+## Customer Module
+
+Implement:
+- Registration and login.
+- Profile management.
+- Product browsing.
+- Product search.
+- Categories.
+- Shopping cart.
+- Checkout.
+- Order placement.
+- Order history.
+- Payment instructions.
+- Payment status.
+- Notifications.
+- Delivery confirmation.
+- Support tickets.
+- Language preferences.
+
+## Supplier Module
+
+Implement:
+- Supplier registration.
+- Supplier profile.
+- Product submission.
+- Product descriptions.
+- Supplier prices.
+- Product image uploads to R2.
+- Product editing.
+- Product submission status.
+- Product approval status.
+- Order notifications.
+- Relevant customer contact details for fulfilment.
+- Order processing.
+- Delivery status updates.
+- Supplier order history.
+- Notifications.
+
+## Admin Module
+
+Implement:
+- Secure Super Admin access.
+- Customer management.
+- Supplier management.
+- Product review and approval.
+- Product pricing and markup.
+- Order management.
+- Payment verification.
+- Supplier oversight.
+- Customer support.
+- Dispute management.
+- Notifications.
+- Application settings.
+- Audit logs.
+- Database operational monitoring.
+
+Do not remove existing modules or functionality.
+
+---
+
+# 11. ORDER MANAGEMENT AND DELIVERY CONFIRMATION
+
+Preserve the existing order-management requirements.
+
+Every order must receive a unique server-generated order number.
+
+Example:
+
+`TE-2026-000001`
+
+Ensure order number uniqueness and prevent duplicate order creation.
+
+When a customer places an order:
+- Save the order securely in Firestore.
+- Notify the customer.
+- Notify the relevant supplier.
+- Record the order timestamp.
+- Provide a persistent order reference.
+- Prevent duplicate notifications and duplicate order records.
+
+The supplier should see the customer contact details required to fulfil that specific order.
+
+The customer should see the relevant supplier contact number for that order.
+
+Do not expose customer or supplier contact information publicly or to unrelated users.
+
+Supplier delivery workflow:
+
+1. Supplier accepts the order.
+2. Supplier processes the order.
+3. Supplier marks it as delivered.
+4. Order status changes to `AWAITING_CUSTOMER_CONFIRMATION`.
+5. Customer receives a notification.
+6. Customer confirms actual receipt.
+7. Only after confirmation should the order become `COMPLETED`.
+
+If the customer reports a problem:
+- Create a dispute/support case.
+- Notify Admin.
+- Preserve the order and delivery history.
+- Do not automatically mark the order completed.
+
+Use validated status transitions and transaction-safe updates.
+
+---
+
+# 12. PAYMENT MANAGEMENT
+
+Preserve the existing Tanzania-focused payment workflows.
+
+Support existing payment methods, including:
+- M-Pesa.
+- NMB.
+
+The displayed payment recipient name must remain:
+
+`MAHELA ISSA KISENA`
+
+Do not invent payment phone numbers or bank account numbers.
+
+Admin must verify payments before orders are treated as paid.
+
+Requirements:
+- Secure payment records.
+- Unique payment references.
+- Transaction duplicate prevention.
+- Payment status history.
+- Admin verification.
+- Customer payment notifications.
+- Secure access to payment evidence.
+- Audit logs for payment status changes.
+
+Never treat a screenshot or transaction ID alone as proof of successful payment without appropriate verification.
+
+---
+
+# 13. NOTIFICATION SYSTEM
+
+Implement persistent Firestore notifications for:
+
+- Customers.
+- Suppliers.
+- Admin.
+
+Notifications should be generated for important events, including:
+- Successful registration where appropriate.
+- New customer order.
+- New supplier order.
+- Product submission.
+- Product approval or rejection.
+- Payment verification.
+- Order status changes.
+- Supplier delivery.
+- Customer receipt confirmation.
+- Disputes.
+- Support responses.
+
+Each notification should include appropriate fields such as:
+- Notification ID.
+- Recipient UID.
+- Related order or product ID.
+- Notification type.
+- Title.
+- Message.
+- Creation timestamp.
+- Read status.
+- Relevant destination or action.
+
+Requirements:
+- Real-time updates.
+- Persistent notification history.
+- Duplicate prevention.
+- Retry handling.
+- Recipient-specific access control.
+- Correct language based on recipient preferences.
+
+---
+
+# 14. COMPLETE ENGLISH AND KISWAHILI SUPPORT
+
+Audit the entire application for bilingual support.
+
+Every relevant interface must support English and Kiswahili, including:
+
+- Landing pages.
+- Navigation.
+- Forms.
+- Buttons.
+- Validation messages.
+- Errors.
+- Success messages.
+- Customer dashboard.
+- Supplier dashboard.
+- Admin dashboard.
+- Product pages.
+- Checkout.
+- Orders.
+- Payment instructions.
+- Notifications.
+- Support tickets.
+- Chatbot.
+- Delivery statuses.
+- Empty states.
+- Loading states.
+
+Requirements:
+- Dynamic language switching.
+- Persist user language preference.
+- Do not lose form data when changing languages.
+- Do not reset the shopping cart or current page.
+- Send notifications in the recipient's preferred language.
+- Avoid hardcoded untranslated text.
+- Use a consistent translation system.
+
+---
+
+# 15. FIRESTORE SECURITY RULES AND ROLE-BASED ACCESS
+
+Implement security according to the actual application data model.
+
+Roles:
+- `customer`
+- `supplier`
+- `admin` / `super_admin`, according to the existing role architecture.
+
+Requirements:
+- Users can access only their authorized data.
+- Customers cannot read another customer's private profile or orders.
+- Suppliers cannot access another supplier's private data or products.
+- Suppliers can access only relevant order information required for fulfilment.
+- Admin permissions must be securely controlled.
+- No client-side self-assignment of privileged roles.
+- Payment data must be protected.
+- Contact information must be restricted to relevant order participants.
+- Notifications must be recipient-specific.
+- Audit logs must not be modifiable by ordinary users.
+
+Use Firebase custom claims and backend verification where appropriate.
+
+Do not rely on frontend role checks as the only security mechanism.
+
+Review and test all Security Rules before publication.
+
+Do not publish rules that accidentally block essential application operations or expose private records.
+
+---
+
+# 16. FIREBASE ADMIN SDK AND BACKEND SECURITY
+
+Inspect the existing backend architecture before implementing Firebase Admin SDK.
+
+Requirements:
+- Verify Firebase ID tokens.
+- Use server-side Firebase Admin SDK.
+- Use secure environment variables.
+- Validate the Firebase project ID.
+- Validate the token audience and issuer.
+- Apply backend authorization to sensitive operations.
+- Prevent privilege escalation.
+- Protect administrative endpoints.
+- Handle expired and invalid tokens.
+- Use structured server-side logging.
+
+Never expose:
+- Service account private keys.
+- Private access tokens.
+- R2 secrets.
+- Database credentials.
+- Sensitive environment variables.
+
+Do not commit `.env` files or secrets to GitHub.
+
+---
+
+# 17. FIRESTORE IAM AND SERVICE ACCOUNT PERMISSIONS
+
+Do not make unnecessary IAM changes.
+
+First inspect:
+- Existing service accounts.
+- Current backend authentication architecture.
+- Required Firestore permissions.
+- Current IAM configuration.
+
+Use least-privilege permissions.
+
+If IAM configuration is required:
+1. Explain why.
+2. Identify the exact service account.
+3. Identify the exact permissions required.
+4. Explain the impact.
+5. Wait for my separate explicit approval before changing production IAM.
+
+Do not create or expose unnecessary service account keys.
+
+Do not assume that a service account needs broad project-owner permissions.
+
+---
+
+# 18. DATABASE RELIABILITY, BACKUPS AND RECOVERY
+
+Build the new database for long-term reliability.
+
+Implement appropriate safeguards:
+
+- Atomic transactions for critical operations.
+- Idempotency keys for sensitive operations.
+- Duplicate order prevention.
+- Duplicate payment prevention.
+- Server-side validation.
+- Network failure handling.
+- Retry mechanisms with backoff.
+- Offline and reconnect handling where appropriate.
+- Real-time consistency checks.
+- Structured error logging.
+- Application health monitoring.
+- Database usage monitoring.
+- Backup scheduling.
+- Backup retention policy.
+- Restoration procedures.
+- Recovery testing.
+- Operational alerts.
+
+Document:
+- Backup frequency.
+- Retention period.
+- Recovery procedure.
+- Restoration verification.
+- Expected recovery limitations.
+
+Do not claim that a database can never fail.
+
+The goal is to reduce failures, prevent data loss, detect issues early, and recover safely.
+
+---
+
+# 19. DEPLOYMENT AND HOSTING ARCHITECTURE
+
+Inspect the existing application architecture before making hosting decisions.
+
+Determine:
+- Whether the application uses Node.js.
+- Whether it uses Express.
+- Whether `server.ts` exists.
+- Whether the application requires a persistent backend server.
+- Existing deployment provider.
+- Existing GitHub Actions configuration.
+- Existing production environment variables.
+
+Do not automatically switch to Firebase Hosting or GitHub Pages.
+
+If the application requires Node.js/Express backend functionality, preserve and use an appropriate backend hosting environment.
+
+Firebase Hosting may be considered for frontend hosting only if compatible with the existing architecture.
+
+Do not deploy to production without separate explicit approval.
+
+---
+
+# 20. COMPLETE SYSTEM TESTING
+
+Perform comprehensive tests before declaring integration complete.
+
+## Authentication Tests
+- New customer registration.
+- New supplier registration.
+- Email/password login.
+- Google Sign-In.
+- Password reset.
+- Logout.
+- Session persistence.
+- Invalid login.
+- Unauthorized access.
+- Super Admin bootstrap.
+
+## Database Tests
+- Create and retrieve user profiles.
+- Customer data isolation.
+- Supplier data isolation.
+- Admin permissions.
+- Firestore transactions.
+- Duplicate prevention.
+- Real-time updates.
+- Security Rules.
+
+## Product Tests
+- Supplier submits product.
+- Supplier uploads product images to R2.
+- Upload confirmation using `HeadObject`.
+- Admin reviews product.
+- Admin approves product.
+- Approved product becomes visible to customers.
+- Product remains visible after logout and login.
+- Unauthorized supplier cannot modify another supplier's product.
+
+## Order Tests
+- Customer places order.
+- Unique order number generated.
+- Customer receives notification.
+- Supplier receives notification.
+- Supplier sees relevant customer contact details.
+- Customer sees relevant supplier contact details.
+- Supplier updates order status.
+- Supplier marks order delivered.
+- Customer receives delivery notification.
+- Customer confirms actual receipt.
+- Order becomes completed.
+- Customer opens dispute.
+- Admin receives dispute notification.
+
+## Payment Tests
+- Customer receives payment instructions.
+- Customer submits payment information.
+- Admin verifies payment.
+- Payment status updates.
+- Duplicate payment prevention.
+- Payment audit history.
+
+## Storage Tests
+- R2 upload.
+- Upload verification.
+- Image retrieval.
+- Ownership-checked deletion.
+- Invalid file rejection.
+- Existing Firebase Storage image compatibility.
+- Private bucket protection.
+
+## Reliability Tests
+- Network interruption.
+- Reconnection.
+- Failed request retry.
+- Duplicate request handling.
+- Transaction failure handling.
+- Backup verification.
+- Restoration test where safely possible.
+
+## Language Tests
+- English interface.
+- Kiswahili interface.
+- Dynamic language switching.
+- Notification translation.
+- Language preference persistence.
+- Form and cart preservation.
+
+Do not claim a test passed unless it was actually executed and its result verified.
+
+---
+
+# 21. BACKUP AND SOURCE CODE PROTECTION
+
+Before modifying source code:
+
+1. Inspect the current Git branch.
+2. Inspect repository status.
+3. Identify uncommitted user changes.
+4. Create a dedicated backup branch.
+5. Verify the backup branch exists.
+6. Preserve the existing source code.
+7. Never overwrite uncommitted work.
+8. Make changes incrementally.
+9. Document modified files.
+10. Keep changes reversible.
+
+Existing GitHub repository:
+
+`https://github.com/mahelaissa/TANZANITE-EXPRESS`
+
+Do not delete repository history or replace the repository.
+
+Never commit secrets or environment files.
+
+---
+
+# 22. IMPLEMENTATION PHASES AND APPROVAL GATES
+
+Work in controlled stages.
+
+## STAGE 0 — READ-ONLY AUDIT
+
+First:
+- Inspect the complete existing codebase.
+- Inspect Firebase configuration.
+- Identify all references to the old Firebase project.
+- Inspect authentication architecture.
+- Inspect Firestore data access patterns.
+- Inspect current database models.
+- Inspect Cloudflare R2 integration status.
+- Inspect backend architecture.
+- Inspect deployment configuration.
+- Inspect environment variable names without exposing their values.
+- Inspect GitHub backup status.
+
+Provide a detailed audit report.
+
+Do not modify application files during this stage.
+
+## STAGE 1 — BACKUP AND INTEGRATION PLAN
+
+Prepare and verify the backup branch.
+
+Provide:
+- Firebase migration plan.
+- Proposed Firestore schema.
+- Authentication integration plan.
+- Super Admin bootstrap plan.
+- R2 integration plan.
+- Security Rules design.
+- Backend architecture plan.
+- Testing plan.
+- Risks and dependencies.
+
+Wait for approval before proceeding to implementation.
+
+## STAGE 2 — FIREBASE PROJECT SWITCH
+
+After approval:
+- Configure the new Firebase project.
+- Update the application's Firebase initialization.
+- Configure Authentication.
+- Configure Firestore integration.
+- Configure backend Firebase Admin SDK.
+- Verify all active Firebase references point to `tanzanite-express`.
+- Verify old project references are no longer used for new operations.
+
+## STAGE 3 — FIRESTORE DATABASE AND SECURITY
+
+After approval:
+- Implement the approved schema.
+- Implement data validation.
+- Implement Security Rules.
+- Configure required indexes.
+- Implement role-based access.
+- Implement secure Super Admin bootstrap.
+- Test authorization and data isolation.
+
+Do not publish untested rules.
+
+## STAGE 4 — CLOUDFARE R2 INTEGRATION
+
+After approval:
+- Integrate the AWS SDK.
+- Configure secure presigned uploads.
+- Implement supplier ownership verification.
+- Implement `HeadObject` confirmation.
+- Implement secure deletion.
+- Implement private media delivery.
+- Test all image workflows.
+
+## STAGE 5 — COMPLETE SYSTEM INTEGRATION
+
+After approval:
+- Connect all customer modules.
+- Connect all supplier modules.
+- Connect all Admin modules.
+- Connect orders, payments, notifications, and support.
+- Implement bilingual coverage.
+- Implement reliability mechanisms.
+
+## STAGE 6 — TESTING AND FINAL REPORT
+
+Run the comprehensive test plan.
+
+Provide:
+- Modified file list.
+- Firebase project verification.
+- Database schema.
+- Security Rules summary.
+- Authentication test results.
+- R2 test results.
+- Order and payment test results.
+- Reliability test results.
+- Outstanding issues.
+- Remaining configuration steps.
+- Deployment recommendations.
+
+Wait for separate approval before production deployment.
+
+---
+
+# 23. CRITICAL NON-NEGOTIABLE RULES
+
+1. Use only Firebase project `tanzanite-express` for new application operations.
+2. Never use `strategic-highlander-1c62f` as the active backend.
+3. Never delete or modify the old Firebase project.
+4. Never create a new application.
+5. Never delete existing application features.
+6. Never expose private credentials.
+7. Never allow ordinary users to become Admin.
+8. Never allow suppliers to access other suppliers' private data.
+9. Never expose customer contact details publicly.
+10. Never treat an unverified payment as confirmed.
+11. Never mark an order completed before customer receipt confirmation.
+12. Never delete existing media assets as part of the fresh database setup.
+13. Never publish untested Security Rules.
+14. Never perform destructive operations without separate explicit approval.
+15. Never deploy to production without separate explicit approval.
+16. Never change production IAM permissions without separate explicit approval.
+17. Never silently skip failed tests.
+18. Never claim functionality is complete without verification.
+
+---
+
+# 24. CURRENT FIREBASE SETUP — VERIFIED BY THE PROJECT OWNER
+
+The following setup has already been completed manually in Firebase Console:
+
+**Firebase Project**
+- Project Name: Tanzanite Express
+- Project ID: `tanzanite-express`
+- Project Number: `175219764302`
+
+**Firebase Web App**
+- App nickname: Tanzanite Express Web
+- App ID: `1:175219764302:web:f7cc5918f77b01e170a71f`
+- Auth Domain: `tanzanite-express.firebaseapp.com`
+- Storage Bucket: `tanzanite-express.firebasestorage.app`
+- Measurement ID: `G-H4ZTJQGS2P`
+
+**Authentication**
+- Email/Password: Enabled.
+- Google Sign-In: Enabled.
+
+**Cloud Firestore**
+- Database successfully created.
+- Collections currently empty.
+- Current Security Rules deny all reads and writes.
+
+**Cloudflare R2**
+- Bucket: `tanzanite-express-products`
+- Private bucket.
+- Existing server-side R2 environment variables configured.
+
+These are owner-reported setup details. Verify the actual project configuration before making changes.
+
+---
+
+# 25. FINAL INSTRUCTIONS — START NOW
+
+I authorize the transition of the existing TANZANITE EXPRESS application to the new Firebase project `tanzanite-express` and the preparation of its fresh database and complete integration.
+
+However, implementation must follow the approval gates above.
+
+**START WITH STAGE 0 — READ-ONLY AUDIT.**
+
+Your first response must contain:
+
+1. Confirmation of the Firebase project target.
+2. Existing Firebase configuration findings.
+3. Old Firebase project references found in the codebase.
+4. Authentication architecture findings.
+5. Firestore architecture findings.
+6. Proposed database collections and relationships.
+7. Cloudflare R2 integration findings.
+8. Backend and hosting findings.
+9. GitHub backup status.
+10. Security risks and recommended fixes.
+11. Exact files expected to require modification.
+12. A step-by-step implementation plan.
+
+Do not modify any application files during Stage 0.
+
+After presenting the audit report and implementation plan, STOP and wait for my approval before proceeding to Stage 1 implementation.
+
+My priority is a secure, reliable, maintainable, production-ready TANZANITE EXPRESS system with a fresh Firebase backend, clean user registration, strong database security, and no loss of existing application functionality.
