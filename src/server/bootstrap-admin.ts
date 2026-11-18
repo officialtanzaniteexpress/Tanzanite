@@ -6,6 +6,11 @@ import { UserAccount } from '../types/marketplace.ts';
 let bootstrapCompleted = false;
 let lastBootstrapStatus: AdminBootstrapStatus | null = null;
 
+function isTestContext(): boolean {
+  return process.argv.some((a) => a.includes('marketplace.test')) ||
+    process.env.VITEST === 'true';
+}
+
 export interface AdminBootstrapStatus {
   attempted: boolean;
   configured: boolean;
@@ -65,8 +70,9 @@ export async function getAdminBootstrapStatus(): Promise<AdminBootstrapStatus> {
   let liveAdminDocExists: boolean | undefined;
   let liveRole: UserAccount['role'] | undefined;
 
-  try {
-    const authUser = await adminAuth.getUserByEmail(BOOTSTRAP_ADMIN_EMAIL);
+  if (!isTestContext()) {
+    try {
+      const authUser = await adminAuth.getUserByEmail(BOOTSTRAP_ADMIN_EMAIL);
     liveUid = authUser.uid;
     liveEmailVerified = Boolean(authUser.emailVerified);
     liveDisabled = Boolean(authUser.disabled);
@@ -79,8 +85,9 @@ export async function getAdminBootstrapStatus(): Promise<AdminBootstrapStatus> {
     if (adminDoc) {
       liveAdminDocExists = adminDoc.exists;
     }
-  } catch {
-    // Offline or Auth unavailable in unit tests; fall back cleanly to store/cached bootstrap state
+    } catch {
+      // Offline or Auth unavailable; fall back to store/cached bootstrap state
+    }
   }
 
   const matchedUser =

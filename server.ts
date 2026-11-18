@@ -181,7 +181,7 @@ import {
   SystemHealthSnapshot,
 } from './src/types/marketplace.ts';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
 
 function extractClientIp(req: express.Request): string {
   const forwarded = req.headers.forwarded;
@@ -6101,7 +6101,7 @@ async function startServer() {
 
   const handleDownloadBackupRequest = async (req: AuthRequest, res: express.Response) => {
     try {
-      const archive = readBackupArchive(req.params.backupId);
+      const archive = await readBackupArchive(req.params.backupId);
       if (!archive) return res.status(404).json({ error: 'Backup snapshot not found.' });
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader(
@@ -6160,7 +6160,7 @@ async function startServer() {
       const persistence = getLocalPersistenceInfo();
       const mediaIntegrity = verifyProductMediaIntegrity(store);
       const backups = listAvailableBackups(store);
-      const latestCheck = verifyLatestBackupChecksum(store);
+      const latestCheck = await verifyLatestBackupChecksum(store);
       const policy = getEffectiveRetentionPolicy(store);
       const bootstrapStatus = await getAdminBootstrapStatus();
       const firebase = getFirebaseAdminDiagnostics();

@@ -593,6 +593,7 @@ async function syncCollectionToFirestore<T extends object>(
   recordId: string,
   data: T
 ) {
+  if (isTestStoreContext()) return;
   const now = new Date().toISOString();
   syncState.lastSyncAttemptAt = now;
   const cleanPayload = stripUndefinedDeep(data as Record<string, unknown>);
@@ -614,6 +615,7 @@ async function syncCollectionToFirestore<T extends object>(
 }
 
 async function deleteDocFromFirestore(collectionName: string, recordId: string) {
+  if (isTestStoreContext()) return;
   const now = new Date().toISOString();
   syncState.lastSyncAttemptAt = now;
   try {
@@ -651,6 +653,15 @@ export async function flushFirestoreOutbox(maxOps: number = 100): Promise<{
   remaining: number;
   lastError: string | null;
 }> {
+  if (isTestStoreContext()) {
+    return {
+      attempted: 0,
+      flushed: 0,
+      remaining: 0,
+      lastError: null,
+    };
+  }
+
   if (syncState.retrying) {
     return {
       attempted: 0,
@@ -782,6 +793,8 @@ export function getLocalPersistenceInfo(): {
  * without overwriting newer local offline state or crashing when running locally without GCP ADC.
  */
 export async function initializeStoreWithFirestore(): Promise<StoreSnapshot> {
+  if (isTestStoreContext()) return loadLocalStore();
+
   const store = loadLocalStore();
   startSyncOutboxWorker();
 

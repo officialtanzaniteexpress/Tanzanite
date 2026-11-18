@@ -197,7 +197,6 @@ export const DASHBOARD_TRANSLATION_PAIRS: Record<string, BilingualPair> = {
   'customer.filterProcessing': { en: 'Processing', sw: 'Inashughulikiwa' },
   'customer.filterShipped': { en: 'Shipped', sw: 'Imesafirishwa' },
   'customer.filterCompleted': { en: 'Completed', sw: 'Imekamilika' },
-  'customer.filterCancelled': { en: 'Cancelled', sw: 'Imefutwa' },
   'customer.filterRefunded': { en: 'Refunded', sw: 'Imerejeshwa' },
   'customer.noMatchingOrders': {
     en: 'No orders match the selected filter or search.',

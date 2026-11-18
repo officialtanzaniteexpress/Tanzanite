@@ -8,7 +8,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(() => {
   // Kama una-deploy GitHub Pages bila custom domain, weka VITE_BASE_PATH=/Tanzanite/
   // Vinginevyo '/Tanzanite/' inasaidia mafaili na PWA yasomeke bila blank screen
-  const rawBase = process.env.VITE_BASE_PATH || '/Tanzanite/';
+  const rawBase = process.env.VITE_BASE_PATH || '/';
   const basePath = rawBase === './' ? './' : rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
   const rootDir = process.cwd();
 

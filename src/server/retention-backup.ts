@@ -137,6 +137,34 @@ async function createStoreBackupUnlocked(params: {
   fs.writeFileSync(tmpFile, wrapper, 'utf-8');
   fs.renameSync(tmpFile, filePath);
 
+  let storageProvider: 'local' | 'cloudflare_r2' = 'local';
+  let objectKey: string | undefined;
+  let verifiedAt: string | undefined;
+
+  // Upload and verify the complete archive before marking it as cloud-backed.
+  const r2 = await import('./r2-storage.ts');
+  const r2Environment = r2.validateR2Environment();
+
+  if (r2Environment.valid) {
+    const archiveBuffer = Buffer.from(wrapper, 'utf-8');
+    const archiveSha256 = crypto.createHash('sha256').update(archiveBuffer).digest('hex');
+    objectKey = `backups/${fileName}`;
+
+    await r2.uploadBackupJsonToR2({
+      objectKey,
+      buffer: archiveBuffer,
+      sha256: archiveSha256,
+    });
+
+    const remoteArchive = await r2.readR2Object(objectKey);
+    if (!remoteArchive || !remoteArchive.equals(archiveBuffer)) {
+      throw new Error('R2 backup read-back verification failed. Local backup was retained.');
+    }
+
+    storageProvider = 'cloudflare_r2';
+    verifiedAt = new Date().toISOString();
+  }
+
   const stat = fs.statSync(filePath);
   const meta: BackupSnapshotMeta = {
     id,
@@ -145,6 +173,9 @@ async function createStoreBackupUnlocked(params: {
     createdByEmail: params.actor.email,
     reason,
     trigger,
+    storageProvider,
+    ...(objectKey ? { objectKey } : {}),
+    ...(verifiedAt ? { verifiedAt } : {}),
     sizeBytes: stat.size,
     sha256,
     counts: {
@@ -203,7 +234,7 @@ export async function createStoreBackup(params: {
 export function listAvailableBackups(store: StoreSnapshot): BackupSnapshotMeta[] {
   ensureBackupsDir();
   const indexed = (store.backups || [])
-    .filter((b) => fs.existsSync(path.join(BACKUPS_DIR, path.basename(b.fileName))))
+    .filter((b) => (b.storageProvider === 'cloudflare_r2' && !!b.objectKey) || fs.existsSync(path.join(BACKUPS_DIR, path.basename(b.fileName))))
     .map((b) => ({
       ...b,
       trigger: b.trigger || (b.reason?.toLowerCase().includes('pre-restore') ? 'pre_restore' : 'manual'),
@@ -211,17 +242,32 @@ export function listAvailableBackups(store: StoreSnapshot): BackupSnapshotMeta[]
   return indexed.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export function readBackupArchive(backupId: string): {
+export async function readBackupArchive(backupId: string): Promise<{
   meta: BackupSnapshotMeta;
   rawContent: string;
   snapshot: StoreSnapshot;
-} | null {
-  ensureBackupsDir();
-  const safeName = `${backupId.replace(/[^a-zA-Z0-9_-]/g, '')}.json`;
-  const filePath = path.join(BACKUPS_DIR, safeName);
-  if (!fs.existsSync(filePath)) return null;
+} | null> {
+  if (!/^bak_[0-9]+_[a-f0-9]{6}$/i.test(backupId)) return null;
 
-  const rawContent = fs.readFileSync(filePath, 'utf-8');
+  ensureBackupsDir();
+  const safeName = `${backupId}.json`;
+  const filePath = path.join(BACKUPS_DIR, safeName);
+
+  let rawContent: string;
+  let storageProvider: 'local' | 'cloudflare_r2' = 'local';
+  let objectKey: string | undefined;
+
+  if (fs.existsSync(filePath)) {
+    rawContent = fs.readFileSync(filePath, 'utf-8');
+  } else {
+    objectKey = `backups/${safeName}`;
+    const r2 = await import('./r2-storage.ts');
+    const remote = await r2.readR2Object(objectKey);
+    if (!remote) return null;
+    rawContent = remote.toString('utf-8');
+    storageProvider = 'cloudflare_r2';
+  }
+
   const parsed = JSON.parse(rawContent) as {
     backupId: string;
     createdAt: string;
@@ -231,17 +277,20 @@ export function readBackupArchive(backupId: string): {
     sha256: string;
     snapshot: StoreSnapshot;
   };
-  if (!parsed || !parsed.snapshot || !parsed.sha256) return null;
+
+  if (!parsed || parsed.backupId !== backupId || !parsed.snapshot || !parsed.sha256) {
+    return null;
+  }
 
   const computedHash = crypto
     .createHash('sha256')
     .update(JSON.stringify(parsed.snapshot, null, 2), 'utf-8')
     .digest('hex');
+
   if (computedHash !== parsed.sha256) {
     throw new Error('Backup integrity verification failed (SHA-256 checksum mismatch).');
   }
 
-  const stat = fs.statSync(filePath);
   const meta: BackupSnapshotMeta = {
     id: parsed.backupId,
     fileName: safeName,
@@ -249,7 +298,9 @@ export function readBackupArchive(backupId: string): {
     createdByEmail: parsed.createdByEmail,
     reason: parsed.reason,
     trigger: parsed.trigger || 'manual',
-    sizeBytes: stat.size,
+    storageProvider,
+    ...(objectKey ? { objectKey, verifiedAt: new Date().toISOString() } : {}),
+    sizeBytes: Buffer.byteLength(rawContent, 'utf-8'),
     sha256: parsed.sha256,
     counts: {
       users: Object.keys(parsed.snapshot.users || {}).length,
@@ -264,17 +315,17 @@ export function readBackupArchive(backupId: string): {
   return { meta, rawContent, snapshot: parsed.snapshot };
 }
 
-export function verifyLatestBackupChecksum(store: StoreSnapshot): {
+export async function verifyLatestBackupChecksum(store: StoreSnapshot): Promise<{
   latestBackup: BackupSnapshotMeta | null;
   valid: boolean | null;
-} {
+}> {
   const backups = listAvailableBackups(store);
   if (backups.length === 0) {
     return { latestBackup: null, valid: null };
   }
   const latest = backups[0];
   try {
-    const archive = readBackupArchive(latest.id);
+    const archive = await readBackupArchive(latest.id);
     return { latestBackup: latest, valid: Boolean(archive) };
   } catch {
     return { latestBackup: latest, valid: false };
@@ -311,7 +362,7 @@ export async function restoreStoreFromBackup(params: {
   actor: Pick<UserAccount, 'uid' | 'email' | 'role'>;
 }): Promise<{ restoredMeta: BackupSnapshotMeta; safetyBackupId: string }> {
   return withStoreLock(async () => {
-    const archive = readBackupArchive(params.backupId);
+    const archive = await readBackupArchive(params.backupId);
     if (!archive) {
       throw new Error('Backup snapshot not found or unreadable.');
     }

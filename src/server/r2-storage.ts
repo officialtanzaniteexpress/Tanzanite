@@ -416,6 +416,11 @@ export function isValidR2ObjectKey(objectKey: string): boolean {
     return false;
   }
   if (isValidR2ProductObjectKey(objectKey)) return true;
+
+  if (/^backups[/]bak_[0-9]+_[a-f0-9]{6}[.]json$/i.test(objectKey)) {
+    return true;
+  }
+
   const parts = objectKey.split('/');
   if (parts.length !== 3) return false;
   const [prefix, scopeId, uniqueFileName] = parts;
@@ -543,6 +548,48 @@ export async function uploadBufferToR2(params: {
     contentType: detectedMime,
     sizeBytes: params.buffer.length,
   };
+}
+
+
+export async function uploadBackupJsonToR2(params: {
+  objectKey: string;
+  buffer: Buffer;
+  sha256: string;
+}): Promise<{ objectKey: string; sizeBytes: number }> {
+  if (!/^backups[/]bak_[0-9]+_[a-f0-9]{6}[.]json$/i.test(params.objectKey)) {
+    throw new Error('Rejected invalid backup object key.');
+  }
+  if (!isValidR2ObjectKey(params.objectKey)) {
+    throw new Error('Rejected attempt to upload invalid R2 backup key.');
+  }
+  if (!Buffer.isBuffer(params.buffer) || params.buffer.length === 0) {
+    throw new Error('Backup JSON is empty or invalid.');
+  }
+  if (!/^[a-f0-9]{64}$/i.test(params.sha256)) {
+    throw new Error('Backup SHA-256 checksum is invalid.');
+  }
+
+  const actualSha256 = crypto.createHash('sha256').update(params.buffer).digest('hex');
+  if (actualSha256 !== params.sha256.toLowerCase()) {
+    throw new Error('Backup SHA-256 checksum does not match its content.');
+  }
+
+  const { client, config } = getR2Client();
+  await withR2Retry('PutObject', () =>
+    client.send(
+      new PutObjectCommand({
+        Bucket: config.bucketName,
+        Key: params.objectKey,
+        Body: params.buffer,
+        ContentType: 'application/json',
+        ContentLength: params.buffer.length,
+        CacheControl: 'private, no-store',
+        Metadata: { sha256: params.sha256.toLowerCase() },
+      })
+    )
+  );
+
+  return { objectKey: params.objectKey, sizeBytes: params.buffer.length };
 }
 
 export async function createPresignedReadUrl(params: {

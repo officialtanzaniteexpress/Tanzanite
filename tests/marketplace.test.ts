@@ -732,9 +732,9 @@ async function runTests() {
     });
     try {
       assert.equal(createdBak.meta.trigger, 'manual');
-      const archive = readBackupArchive(createdBak.meta.id);
+      const archive = await readBackupArchive(createdBak.meta.id);
       assert.ok(archive !== null && archive.meta.sha256 === createdBak.meta.sha256);
-      const latestCheck = verifyLatestBackupChecksum(await getStore());
+      const latestCheck = await verifyLatestBackupChecksum(await getStore());
       assert.equal(latestCheck.valid, true);
     } finally {
       const bakPath = path.join(BACKUPS_DIR, createdBak.meta.fileName);

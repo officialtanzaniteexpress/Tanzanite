@@ -621,6 +621,9 @@ export interface BackupSnapshotMeta {
   createdByEmail: string;
   reason: string;
   trigger?: 'manual' | 'scheduled' | 'pre_restore';
+  storageProvider?: 'local' | 'cloudflare_r2';
+  objectKey?: string;
+  verifiedAt?: string;
   sizeBytes: number;
   sha256: string;
   counts: {

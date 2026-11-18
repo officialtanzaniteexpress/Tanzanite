@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { translateCategory } from '../lib/domain-labels';
 import { apiFetch } from '../lib/api';
 import {
   formatLocalizedDate,
