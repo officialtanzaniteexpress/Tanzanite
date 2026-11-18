@@ -2661,6 +2661,11 @@ export const SupplierDashboard: React.FC = () => {
                                 {sub.customerShippingName} ({sub.customerShippingCity},{' '}
                                 {translateCountry(sub.customerShippingCountry, language)})
                               </span>
+                              {sub.customerShippingPhone && (
+                                <span className="text-neutral-600 ml-2">
+                                  · {t('common.phone')}: {sub.customerShippingPhone}
+                                </span>
+                              )}
                               <span className="text-neutral-400 ml-2 font-mono-tabular">
                                 · {formatLocalizedDate(sub.createdAt, language)}
                               </span>
