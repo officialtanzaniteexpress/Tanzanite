@@ -203,20 +203,6 @@ async function startServer() {
   console.info(
     `[Firebase] Project=${firebaseDiag.projectId} | Database=${firebaseDiag.databaseId} | AppId=${firebaseDiag.appId} | CredentialMode=${firebaseDiag.credentialMode} | ServiceAccountConfigured=${firebaseDiag.serviceAccountConfigured} | Sources=[${credInventory.join('; ')}]`
   );
-  await initializeStoreWithFirestore();
-  await bootstrapSuperAdmin();
-  void initializeChatbotKnowledgeIfEmpty().catch((err) =>
-    console.warn('Chatbot initial indexing skipped:', err)
-  );
-  void triggerScheduledBackupIfDue().catch((err) =>
-    console.warn('Scheduled backup check skipped:', err)
-  );
-  const autoBackupTimer = setInterval(() => {
-    void triggerScheduledBackupIfDue().catch(() => {});
-  }, 12 * 3600 * 1000);
-  if (typeof autoBackupTimer.unref === 'function') {
-    autoBackupTimer.unref();
-  }
 
   const app = express();
   // Trust the first reverse-proxy hop (e.g., Cloud Run load balancer)
@@ -6764,6 +6750,40 @@ async function startServer() {
 
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`TANZANITE EXPRESS running on http://0.0.0.0:${PORT}`);
+
+    // Open the Render port first; initialize external services in the background.
+    void (async () => {
+      try {
+        console.info('[Startup] Initializing Firestore in background...');
+        await initializeStoreWithFirestore();
+        console.info('[Startup] Firestore initialization finished.');
+      } catch (err) {
+        console.error('[Startup] Firestore initialization failed:', err);
+      }
+
+      try {
+        await bootstrapSuperAdmin();
+      } catch (err) {
+        console.error('[Startup] Super Admin bootstrap failed:', err);
+      }
+
+      void initializeChatbotKnowledgeIfEmpty().catch((err) =>
+        console.warn('Chatbot initial indexing skipped:', err)
+      );
+
+      void triggerScheduledBackupIfDue().catch((err) =>
+        console.warn('Scheduled backup check skipped:', err)
+      );
+    })();
+
+    const autoBackupTimer = setInterval(() => {
+      void triggerScheduledBackupIfDue().catch(() => {});
+    }, 12 * 3600 * 1000);
+
+    if (typeof autoBackupTimer.unref === 'function') {
+      autoBackupTimer.unref();
+    }
+
     void runR2LiveSelfCheck();
   });
 
