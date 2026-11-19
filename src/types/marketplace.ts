@@ -199,6 +199,8 @@ export interface MediaAssetMeta {
   updatedAt: string;
 }
 
+export type ShippingFeeMode = 'FIXED' | 'CONTACT_CUSTOMER';
+
 export interface Product {
   id: string;
   supplierId: string;
@@ -226,6 +228,7 @@ export interface Product {
   estimatedDaysMin: number;
   estimatedDaysMax: number;
   shippingFeeUsd: number;
+  shippingFeeMode?: ShippingFeeMode;
   shippingNotes?: string;
   returnPolicySummary: string;
   status: ProductStatus;
@@ -258,6 +261,7 @@ export interface CartItem {
   unitPriceUsd: number;
   wholesalePriceUsd: number;
   shippingFeeUsd: number;
+  shippingFeeMode?: ShippingFeeMode;
   estimatedDaysMin: number;
   estimatedDaysMax: number;
   shippingOriginCountry: string;
@@ -307,6 +311,7 @@ export interface SupplierSuborder {
   supplierBaseCostUsd: number;
   adminMarkupUsd: number;
   shippingFeeUsd: number;
+  shippingFeeMode?: ShippingFeeMode;
   marketplaceCommissionRatePct: number;
   marketplaceCommissionUsd: number;
   supplierNetEarningsUsd: number;
@@ -443,6 +448,58 @@ export interface PaymentAuditLog {
   actorUid: string;
   actorEmail: string;
   actorRole: string;
+  reason?: string;
+  metadata?: Record<string, string | number | boolean>;
+  createdAt: string;
+}
+
+export type ShippingPaymentStatus =
+  | 'AWAITING_CUSTOMER_PAYMENT'
+  | 'SUBMITTED'
+  | 'CONFIRMED'
+  | 'REJECTED';
+
+export interface ShippingPaymentRecord {
+  id: string;
+  suborderId: string;
+  orderId: string;
+  supplierId: string;
+  supplierOwnerUid: string;
+  customerId: string;
+  agreedAmount: number;
+  currency: 'USD' | 'TZS';
+  paymentMethod: string;
+  recipientName: string;
+  recipientAccount: string;
+  paymentInstructions?: string;
+  status: ShippingPaymentStatus;
+  transactionId?: string;
+  customerSubmittedAt?: string;
+  supplierReviewedAt?: string;
+  supplierReviewedByUid?: string;
+  supplierReviewReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShippingPaymentAuditLog {
+  id: string;
+  shippingPaymentId: string;
+  suborderId: string;
+  orderId: string;
+  action:
+    | 'AGREEMENT_SET'
+    | 'AGREEMENT_UPDATED'
+    | 'CUSTOMER_PAYMENT_SUBMITTED'
+    | 'CUSTOMER_PAYMENT_RESUBMITTED'
+    | 'PAYMENT_CONFIRMED'
+    | 'PAYMENT_REJECTED';
+  previousStatus: string;
+  newStatus: string;
+  actorUid: string;
+  actorEmail: string;
+  actorRole: string;
+  transactionId?: string;
   reason?: string;
   metadata?: Record<string, string | number | boolean>;
   createdAt: string;

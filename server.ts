@@ -111,6 +111,7 @@ import { MEN_CATEGORIES, WOMEN_CATEGORIES } from './src/server/seed-data.ts';
 import {
   appendAuditLog,
   appendPaymentAuditLog,
+  appendShippingPaymentAuditLog,
   clearVisibleNotificationsForUser,
   createNotification,
   deleteChatbotFaqRecord,
@@ -152,6 +153,7 @@ import {
   upsertRetentionPolicy,
   upsertReviewRecord,
   upsertSuborder,
+  upsertShippingPayment,
   upsertSupplier,
   upsertSupplierPayout,
   upsertSupportTicket,
@@ -177,6 +179,8 @@ import {
   SupplierPayout,
   SupplierProfile,
   SupplierSuborder,
+  ShippingPaymentRecord,
+  ShippingPaymentAuditLog,
   SupportTicket,
   SystemHealthSnapshot,
 } from './src/types/marketplace.ts';
@@ -1715,10 +1719,17 @@ async function startServer() {
       .map(sanitizeSubmissionForClient)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const refunds = Object.values(store.refunds).filter((r) => r.customerId === uid);
+    const customerSuborderIds = new Set(suborders.map((suborder) => suborder.id));
+    const shippingPayments = Object.values(store.shippingPayments)
+      .filter((payment) =>
+        customerSuborderIds.has(payment.suborderId) && payment.customerId === uid
+      )
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
     res.json({
       orders: pagedOrders,
       suborders,
+      shippingPayments,
       payments,
       paymentSubmissions,
       refunds,
@@ -2341,9 +2352,14 @@ async function startServer() {
         subItems.reduce((acc, item) => acc + item.unitWholesalePriceUsd * item.quantity, 0)
       );
       const adminMarkupUsd = round2(Math.max(0, subSubtotal - supplierBaseCostUsd));
+      const shippingFeeMode = lines.some(
+        (l) => (l.product.shippingFeeMode || 'FIXED') === 'CONTACT_CUSTOMER'
+      ) ? 'CONTACT_CUSTOMER' : 'FIXED';
       const baseShip = Math.max(...lines.map((l) => l.product.shippingFeeUsd));
       const zoneMultiplier = isInternational ? 1.5 : 1;
-      const subShipping = round2(baseShip * zoneMultiplier);
+      const subShipping = shippingFeeMode === 'CONTACT_CUSTOMER'
+        ? 0
+        : round2(baseShip * zoneMultiplier);
 
       // Admin markup profit model + optional percentage rule if configured
       const ratePct = resolveCommissionRatePct(store, supplierId, lines[0].product.category);
@@ -2373,6 +2389,7 @@ async function startServer() {
         supplierBaseCostUsd,
         adminMarkupUsd,
         shippingFeeUsd: subShipping,
+        shippingFeeMode,
         marketplaceCommissionRatePct: ratePct,
         marketplaceCommissionUsd: commissionUsd,
         supplierNetEarningsUsd: netSupplierUsd,
@@ -2837,11 +2854,20 @@ async function startServer() {
       const productIds = new Set(products.map((p) => p.id));
       const reviews = Object.values(store.reviews).filter((r) => productIds.has(r.productId));
       const earnings = calculateSupplierEarningsSummary(store, supplier.id);
+      const visibleSuborderIds = new Set(suborders.map((suborder) => suborder.id));
+      const shippingPayments = Object.values(store.shippingPayments)
+        .filter((payment) =>
+          visibleSuborderIds.has(payment.suborderId) &&
+          payment.supplierId === supplier.id &&
+          payment.supplierOwnerUid === supplier.ownerUid
+        )
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
       res.json({
         supplier,
         products,
         suborders,
+        shippingPayments,
         payouts,
         refunds,
         reviews,
@@ -2924,11 +2950,283 @@ async function startServer() {
       const total = list.length;
       const totalPages = Math.max(1, Math.ceil(total / limit));
       const suborders = list.slice((page - 1) * limit, page * limit);
+      const pageSuborderIds = new Set(suborders.map((suborder) => suborder.id));
+      const shippingPayments = Object.values(store.shippingPayments)
+        .filter((payment) =>
+          pageSuborderIds.has(payment.suborderId) &&
+          payment.supplierId === supplier.id &&
+          payment.supplierOwnerUid === supplier.ownerUid
+        )
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
       res.json({
         suborders,
+        shippingPayments,
         pagination: { page, pageSize: limit, total, totalPages, hasMore: page < totalPages },
       });
+    }
+  );
+
+
+  // ------------------------------------------------------------------
+  // NEGOTIATED SHIPPING PAYMENT — separate from product payment flow
+  // ------------------------------------------------------------------
+
+  app.patch(
+    '/api/supplier/suborders/:suborderId/shipping-payment/agreement',
+    requireAuth,
+    requireRoles('supplier', 'super_admin'),
+    async (req: AuthRequest, res) => {
+      const schema = z.object({
+        agreedAmount: z.number().positive().max(1000000000),
+        currency: z.enum(['USD', 'TZS']),
+        paymentMethod: z.string().trim().min(2).max(80),
+        recipientName: z.string().trim().min(2).max(120),
+        recipientAccount: z.string().trim().min(3).max(160),
+        paymentInstructions: z.string().trim().max(1000).optional(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: 'Invalid shipping agreement details.' });
+      }
+
+      const result = await withStoreLock(async () => {
+        const store = await getStore();
+        const suborder = store.suborders[req.params.suborderId];
+        if (!suborder) {
+          return { status: 404, body: { error: 'Suborder not found.' } };
+        }
+
+        const isAdmin = req.authUser!.role === 'super_admin';
+        if (!isAdmin && (
+          suborder.supplierOwnerUid !== req.authUser!.uid ||
+          suborder.supplierId !== Object.values(store.suppliers).find(
+            (supplier) => supplier.ownerUid === req.authUser!.uid
+          )?.id
+        )) {
+          return { status: 403, body: { error: 'You cannot manage this supplier order.' } };
+        }
+
+        if (suborder.shippingFeeMode !== 'CONTACT_CUSTOMER') {
+          return { status: 400, body: { error: 'This order does not use negotiated shipping.' } };
+        }
+
+        if (
+          suborder.fulfillmentReleased !== true &&
+          suborder.paymentStatus !== 'CONFIRMED' &&
+          suborder.adminExceptionReleased !== true
+        ) {
+          return { status: 403, body: { error: 'Shipping agreement is available after order payment is released.' } };
+        }
+
+        const existing = Object.values(store.shippingPayments).find(
+          (payment) => payment.suborderId === suborder.id
+        );
+        if (existing && existing.status !== 'AWAITING_CUSTOMER_PAYMENT' && existing.status !== 'REJECTED') {
+          return { status: 409, body: { error: 'The agreement cannot be changed while a payment is submitted or confirmed.' } };
+        }
+
+        const now = new Date().toISOString();
+        const previousStatus = existing?.status || 'NOT_CREATED';
+        const payment: ShippingPaymentRecord = {
+          id: existing?.id || generateId('shp'),
+          suborderId: suborder.id,
+          orderId: suborder.orderId,
+          supplierId: suborder.supplierId,
+          supplierOwnerUid: suborder.supplierOwnerUid,
+          customerId: suborder.customerId,
+          ...parsed.data,
+          status: 'AWAITING_CUSTOMER_PAYMENT',
+          transactionId: undefined,
+          customerSubmittedAt: undefined,
+          supplierReviewedAt: undefined,
+          supplierReviewedByUid: undefined,
+          supplierReviewReason: undefined,
+          createdAt: existing?.createdAt || now,
+          updatedAt: now,
+        };
+
+        await upsertShippingPayment(payment);
+        await appendShippingPaymentAuditLog({
+          shippingPaymentId: payment.id,
+          suborderId: suborder.id,
+          orderId: suborder.orderId,
+          action: existing ? 'AGREEMENT_UPDATED' : 'AGREEMENT_SET',
+          previousStatus,
+          newStatus: payment.status,
+          actorUid: req.authUser!.uid,
+          actorEmail: req.authUser!.email || '',
+          actorRole: req.authUser!.role,
+          metadata: {
+            agreedAmount: payment.agreedAmount,
+            currency: payment.currency,
+            ...(existing?.transactionId ? { previousTransactionId: existing.transactionId } : {}),
+          },
+        });
+
+        return { status: 200, body: { shippingPayment: payment } };
+      });
+
+      return res.status(result.status).json(result.body);
+    }
+  );
+
+  app.post(
+    '/api/customer/suborders/:suborderId/shipping-payment/submit',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      const schema = z.object({
+        transactionId: z.string().trim().min(3).max(160),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: 'Please enter a valid transaction ID.' });
+      }
+
+      const result = await withStoreLock(async () => {
+        const store = await getStore();
+        const suborder = store.suborders[req.params.suborderId];
+        if (!suborder) {
+          return { status: 404, body: { error: 'Suborder not found.' } };
+        }
+        if (suborder.customerId !== req.authUser!.uid) {
+          return { status: 403, body: { error: 'You cannot submit payment for this order.' } };
+        }
+        if (suborder.shippingFeeMode !== 'CONTACT_CUSTOMER') {
+          return { status: 400, body: { error: 'This order does not use negotiated shipping.' } };
+        }
+
+        const payment = Object.values(store.shippingPayments).find(
+          (item) => item.suborderId === suborder.id
+        );
+        if (!payment) {
+          return { status: 409, body: { error: 'The supplier has not provided shipping payment details yet.' } };
+        }
+        if (payment.status !== 'AWAITING_CUSTOMER_PAYMENT' && payment.status !== 'REJECTED') {
+          return { status: 409, body: { error: 'This shipping payment cannot accept another submission.' } };
+        }
+
+        const normalizedId = parsed.data.transactionId.toLowerCase();
+        const duplicate = Object.values(store.shippingPayments).find(
+          (item) =>
+            item.id !== payment.id &&
+            item.transactionId?.trim().toLowerCase() === normalizedId
+        );
+        if (duplicate) {
+          return { status: 409, body: { error: 'This transaction ID has already been submitted.' } };
+        }
+
+        const now = new Date().toISOString();
+        const previousStatus = payment.status;
+        const previousTransactionId = payment.transactionId;
+        const updated: ShippingPaymentRecord = {
+          ...payment,
+          transactionId: parsed.data.transactionId,
+          status: 'SUBMITTED',
+          customerSubmittedAt: now,
+          supplierReviewedAt: undefined,
+          supplierReviewedByUid: undefined,
+          supplierReviewReason: undefined,
+          updatedAt: now,
+        };
+
+        await upsertShippingPayment(updated);
+        await appendShippingPaymentAuditLog({
+          shippingPaymentId: payment.id,
+          suborderId: suborder.id,
+          orderId: suborder.orderId,
+          action: previousStatus === 'REJECTED'
+            ? 'CUSTOMER_PAYMENT_RESUBMITTED'
+            : 'CUSTOMER_PAYMENT_SUBMITTED',
+          previousStatus,
+          newStatus: updated.status,
+          actorUid: req.authUser!.uid,
+          actorEmail: req.authUser!.email || '',
+          actorRole: req.authUser!.role,
+          transactionId: updated.transactionId,
+          metadata: previousTransactionId
+            ? { previousTransactionId }
+            : undefined,
+        });
+
+        return { status: 200, body: { shippingPayment: updated } };
+      });
+
+      return res.status(result.status).json(result.body);
+    }
+  );
+
+  app.post(
+    '/api/supplier/suborders/:suborderId/shipping-payment/verify',
+    requireAuth,
+    requireRoles('supplier', 'super_admin'),
+    async (req: AuthRequest, res) => {
+      const schema = z.object({
+        decision: z.enum(['CONFIRM', 'REJECT']),
+        reason: z.string().trim().max(500).optional(),
+      }).refine(
+        (value) => value.decision !== 'REJECT' || Boolean(value.reason && value.reason.length >= 3),
+        { message: 'A reason is required when rejecting a payment.' }
+      );
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: 'Invalid verification decision. A rejection reason is required.' });
+      }
+
+      const result = await withStoreLock(async () => {
+        const store = await getStore();
+        const suborder = store.suborders[req.params.suborderId];
+        if (!suborder) {
+          return { status: 404, body: { error: 'Suborder not found.' } };
+        }
+
+        const isAdmin = req.authUser!.role === 'super_admin';
+        if (!isAdmin && (
+          suborder.supplierOwnerUid !== req.authUser!.uid ||
+          suborder.supplierId !== Object.values(store.suppliers).find(
+            (supplier) => supplier.ownerUid === req.authUser!.uid
+          )?.id
+        )) {
+          return { status: 403, body: { error: 'You cannot verify payment for this supplier order.' } };
+        }
+
+        const payment = Object.values(store.shippingPayments).find(
+          (item) => item.suborderId === suborder.id
+        );
+        if (!payment || payment.status !== 'SUBMITTED' || !payment.transactionId) {
+          return { status: 409, body: { error: 'No submitted shipping transaction is awaiting verification.' } };
+        }
+
+        const now = new Date().toISOString();
+        const confirmed = parsed.data.decision === 'CONFIRM';
+        const updated: ShippingPaymentRecord = {
+          ...payment,
+          status: confirmed ? 'CONFIRMED' : 'REJECTED',
+          supplierReviewedAt: now,
+          supplierReviewedByUid: req.authUser!.uid,
+          supplierReviewReason: confirmed ? undefined : parsed.data.reason,
+          updatedAt: now,
+        };
+
+        await upsertShippingPayment(updated);
+        await appendShippingPaymentAuditLog({
+          shippingPaymentId: payment.id,
+          suborderId: suborder.id,
+          orderId: suborder.orderId,
+          action: confirmed ? 'PAYMENT_CONFIRMED' : 'PAYMENT_REJECTED',
+          previousStatus: payment.status,
+          newStatus: updated.status,
+          actorUid: req.authUser!.uid,
+          actorEmail: req.authUser!.email || '',
+          actorRole: req.authUser!.role,
+          transactionId: payment.transactionId,
+          reason: parsed.data.reason,
+        });
+
+        return { status: 200, body: { shippingPayment: updated } };
+      });
+
+      return res.status(result.status).json(result.body);
     }
   );
 
@@ -3511,6 +3809,7 @@ async function startServer() {
         estimatedDaysMin: z.number().int().min(1).max(60),
         estimatedDaysMax: z.number().int().min(1).max(90),
         shippingFeeUsd: z.number().nonnegative(),
+        shippingFeeMode: z.enum(['FIXED', 'CONTACT_CUSTOMER']).default('FIXED'),
         shippingNotes: z.string().max(400).optional(),
         returnPolicySummary: z.string().min(5).max(300),
         submitMode: z.enum(['DRAFT', 'PENDING_APPROVAL']).optional(),
@@ -3659,6 +3958,7 @@ async function startServer() {
         wholesalePriceUsd: z.number().positive().optional(),
         sellingPriceUsd: z.number().positive().optional(),
         shippingFeeUsd: z.number().nonnegative().optional(),
+        shippingFeeMode: z.enum(['FIXED', 'CONTACT_CUSTOMER']).optional(),
         shippingOriginCountry: z.string().min(2).max(80).optional(),
         shippingDestinations: z.array(z.string()).min(1).optional(),
         estimatedDaysMin: z.number().int().min(1).max(60).optional(),
@@ -3799,6 +4099,7 @@ async function startServer() {
             typeof updates.shippingFeeUsd === 'number'
               ? round2(updates.shippingFeeUsd)
               : product.shippingFeeUsd,
+          shippingFeeMode: updates.shippingFeeMode ?? product.shippingFeeMode ?? 'FIXED',
           status: nextStatus,
           isPublished: nextPublished,
           adminRejectionReason:
@@ -4410,6 +4711,12 @@ async function startServer() {
       const paymentAuditLogs = Object.values(store.paymentAuditLogs).sort((a, b) =>
         b.createdAt.localeCompare(a.createdAt)
       );
+      const shippingPayments = Object.values(store.shippingPayments).sort((a, b) =>
+        b.updatedAt.localeCompare(a.updatedAt)
+      );
+      const shippingPaymentAuditLogs = Object.values(store.shippingPaymentAuditLogs).sort(
+        (a, b) => b.createdAt.localeCompare(a.createdAt)
+      );
       const payouts = Object.values(store.payouts);
       const refunds = Object.values(store.refunds);
       const tickets = Object.values(store.tickets);
@@ -4505,6 +4812,8 @@ async function startServer() {
         payments: payments.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         paymentSubmissions,
         paymentAuditLogs: paymentAuditLogs.slice(0, 150),
+        shippingPayments,
+        shippingPaymentAuditLogs: shippingPaymentAuditLogs.slice(0, 250),
         payouts: payouts.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         refunds: refunds.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         tickets: tickets.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),

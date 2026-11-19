@@ -53,6 +53,7 @@ import {
   PaymentTransaction,
   RefundRequest,
   SupplierSuborder,
+  ShippingPaymentRecord,
   SupportTicket,
 } from '../types/marketplace';
 import { PaymentInstructionCard } from './PaymentInstructionCard';
@@ -122,6 +123,9 @@ export const CustomerDashboard: React.FC = () => {
   const [tab, setTab] = useState<Tab>('orders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [suborders, setSuborders] = useState<SupplierSuborder[]>([]);
+  const [shippingPayments, setShippingPayments] = useState<ShippingPaymentRecord[]>([]);
+  const [shippingTxInputs, setShippingTxInputs] = useState<Record<string, string>>({});
+  const [submittingShippingSuborderId, setSubmittingShippingSuborderId] = useState<string | null>(null);
   const [payments, setPayments] = useState<PaymentTransaction[]>([]);
   const [paymentSubmissions, setPaymentSubmissions] = useState<PaymentSubmission[]>([]);
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
@@ -195,6 +199,7 @@ export const CustomerDashboard: React.FC = () => {
         apiFetch<{
           orders: Order[];
           suborders: SupplierSuborder[];
+          shippingPayments?: ShippingPaymentRecord[];
           payments: PaymentTransaction[];
           paymentSubmissions?: PaymentSubmission[];
           refunds: RefundRequest[];
@@ -203,6 +208,7 @@ export const CustomerDashboard: React.FC = () => {
       ]);
       setOrders(ordRes.orders);
       setSuborders(ordRes.suborders);
+      setShippingPayments(ordRes.shippingPayments || []);
       setPayments(ordRes.payments);
       setPaymentSubmissions(ordRes.paymentSubmissions || []);
       setRefunds(ordRes.refunds);
@@ -489,6 +495,32 @@ export const CustomerDashboard: React.FC = () => {
     }
   };
 
+  const handleSubmitShippingPayment = async (suborderId: string) => {
+    const transactionId = (shippingTxInputs[suborderId] || '').trim();
+    if (transactionId.length < 4) {
+      toast('Weka transaction ID yenye angalau herufi/namba 4.', 'error');
+      return;
+    }
+
+    setSubmittingShippingSuborderId(suborderId);
+    try {
+      await apiFetch(
+        `/api/customer/suborders/${encodeURIComponent(suborderId)}/shipping-payment/submit`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ transactionId }),
+        }
+      );
+      setShippingTxInputs((prev) => ({ ...prev, [suborderId]: '' }));
+      await loadData();
+      toast('Transaction ID ya malipo ya shipping imetumwa kwa supplier.', 'success');
+    } catch (err: any) {
+      toast(err.message || 'Imeshindikana kutuma transaction ID ya shipping.', 'error');
+    } finally {
+      setSubmittingShippingSuborderId(null);
+    }
+  };
+
   const handleConfirmDelivery = async (suborderId: string) => {
     setConfirmingSuborderId(suborderId);
     try {
@@ -548,6 +580,7 @@ export const CustomerDashboard: React.FC = () => {
           unitPriceUsd: liveProduct.sellingPriceUsd,
           wholesalePriceUsd: liveProduct.wholesalePriceUsd,
           shippingFeeUsd: liveProduct.shippingFeeUsd,
+          shippingFeeMode: liveProduct.shippingFeeMode || 'FIXED',
           estimatedDaysMin: liveProduct.estimatedDaysMin,
           estimatedDaysMax: liveProduct.estimatedDaysMax,
           shippingOriginCountry: liveProduct.shippingOriginCountry,
@@ -1127,6 +1160,105 @@ export const CustomerDashboard: React.FC = () => {
                                 );
                               })}
                             </ul>
+                            {sub.shippingFeeMode === 'CONTACT_CUSTOMER' && (() => {
+                              const shippingPayment = shippingPayments.find(
+                                (payment) => payment.suborderId === sub.id
+                              );
+
+                              return (
+                                <div className="mt-3 border border-[#D8DCEB] bg-white p-3 space-y-2 text-xs">
+                                  <p className="font-semibold text-[#111322]">
+                                    Shipping payment — direct to supplier
+                                  </p>
+                                  {!shippingPayment ? (
+                                    <p className="text-neutral-600">
+                                      Supplier atawasiliana nawe kukubaliana gharama na maelekezo ya malipo ya usafirishaji.
+                                    </p>
+                                  ) : (
+                                    <>
+                                      <div className="grid sm:grid-cols-2 gap-2 text-neutral-700">
+                                        <p>
+                                          Kiasi: <strong className="tabular-nums">
+                                            {shippingPayment.currency} {shippingPayment.agreedAmount.toLocaleString()}
+                                          </strong>
+                                        </p>
+                                        <p>
+                                          Njia ya malipo: <strong>{shippingPayment.paymentMethod}</strong>
+                                        </p>
+                                        <p>
+                                          Mpokeaji: <strong>{shippingPayment.recipientName}</strong>
+                                        </p>
+                                        <p>
+                                          Akaunti/namba: <strong className="break-all">{shippingPayment.recipientAccount}</strong>
+                                        </p>
+                                      </div>
+                                      {shippingPayment.paymentInstructions && (
+                                        <p className="text-neutral-600 whitespace-pre-wrap">
+                                          Maelekezo: {shippingPayment.paymentInstructions}
+                                        </p>
+                                      )}
+                                      <p className="font-semibold">
+                                        Hali:{' '}
+                                        <span className={
+                                          shippingPayment.status === 'CONFIRMED'
+                                            ? 'text-emerald-700'
+                                            : shippingPayment.status === 'REJECTED'
+                                              ? 'text-red-700'
+                                              : shippingPayment.status === 'SUBMITTED'
+                                                ? 'text-blue-700'
+                                                : 'text-amber-700'
+                                        }>
+                                          {shippingPayment.status.replaceAll('_', ' ')}
+                                        </span>
+                                      </p>
+                                      {shippingPayment.status === 'CONFIRMED' && (
+                                        <p className="text-emerald-700">
+                                          Malipo ya shipping yamethibitishwa na supplier.
+                                        </p>
+                                      )}
+                                      {shippingPayment.status === 'SUBMITTED' && (
+                                        <p className="text-blue-700">
+                                          Transaction ID imetumwa. Inasubiri uhakiki wa supplier.
+                                        </p>
+                                      )}
+                                      {shippingPayment.status === 'REJECTED' && (
+                                        <p className="text-red-700">
+                                          Transaction ID imekataliwa: {shippingPayment.supplierReviewReason || 'Wasiliana na supplier.'}
+                                        </p>
+                                      )}
+                                      {shippingPayment.status !== 'CONFIRMED' &&
+                                        shippingPayment.status !== 'SUBMITTED' && (
+                                          <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                                            <input
+                                              value={shippingTxInputs[sub.id] || ''}
+                                              onChange={(e) =>
+                                                setShippingTxInputs((prev) => ({
+                                                  ...prev,
+                                                  [sub.id]: e.target.value,
+                                                }))
+                                              }
+                                              placeholder="Weka transaction ID ya malipo"
+                                              className="min-w-0 flex-1 border border-[#E5E2DC] px-3 py-2"
+                                            />
+                                            <button
+                                              type="button"
+                                              disabled={submittingShippingSuborderId === sub.id}
+                                              onClick={() => handleSubmitShippingPayment(sub.id)}
+                                              className="bg-[#2B3A9F] text-white px-4 py-2 font-semibold disabled:opacity-50"
+                                            >
+                                              {submittingShippingSuborderId === sub.id
+                                                ? 'Inatuma...'
+                                                : shippingPayment.status === 'REJECTED'
+                                                  ? 'Tuma tena ID'
+                                                  : 'Nimetuma malipo'}
+                                            </button>
+                                          </div>
+                                        )}
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             {sub.trackingNumber && (
                               <p className="mt-2 text-xs text-emerald-800">
                                 {t('customer.trackingCarrierLabel', { carrier: sub.carrierName || '-' })}{' '}

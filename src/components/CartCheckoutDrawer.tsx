@@ -114,10 +114,17 @@ export const CartCheckoutDrawer: React.FC = () => {
   const estimatedShippingUsd = useMemo(() => {
     if (groupedBySupplier.length === 0) return 0;
     return groupedBySupplier.reduce((sum, [, items]) => {
+      if (items.some((item) => (item.shippingFeeMode || 'FIXED') === 'CONTACT_CUSTOMER')) {
+        return sum;
+      }
       const base = Math.max(...items.map((i) => i.shippingFeeUsd));
       return sum + (isInternational ? base * 1.5 : base);
     }, 0);
   }, [groupedBySupplier, isInternational]);
+
+  const hasNegotiatedShipping = cart.some(
+    (item) => (item.shippingFeeMode || 'FIXED') === 'CONTACT_CUSTOMER'
+  );
 
   const totalUsd = Math.max(0, subtotalUsd - discountUsd + estimatedShippingUsd);
 
@@ -852,6 +859,11 @@ export const CartCheckoutDrawer: React.FC = () => {
                 </span>
                 <span className="tabular-nums">{formatMoney(estimatedShippingUsd)}</span>
               </div>
+              {hasNegotiatedShipping && (
+                <p className="text-[11px] leading-relaxed text-amber-800 bg-amber-50 border border-amber-100 rounded-md p-3">
+                  {t('negotiatedShippingNotice')}
+                </p>
+              )}
               <div className="flex justify-between text-sm font-semibold text-[#111111] pt-2 border-t border-[#E5E2DC]">
                 <span>{t('total')}</span>
                 <span className="tabular-nums">{formatMoney(totalUsd)}</span>

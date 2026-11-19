@@ -34,6 +34,8 @@ import {
   PaymentAuditLog,
   PaymentSubmission,
   PaymentTransaction,
+  ShippingPaymentRecord,
+  ShippingPaymentAuditLog,
   Product,
   ProductImageMeta,
   RefundRequest,
@@ -60,6 +62,8 @@ export interface StoreSnapshot {
   payments: Record<string, PaymentTransaction>;
   paymentSubmissions: Record<string, PaymentSubmission>;
   paymentAuditLogs: Record<string, PaymentAuditLog>;
+  shippingPayments: Record<string, ShippingPaymentRecord>;
+  shippingPaymentAuditLogs: Record<string, ShippingPaymentAuditLog>;
   commissionRules: Record<string, CommissionRule>;
   payouts: Record<string, SupplierPayout>;
   refunds: Record<string, RefundRequest>;
@@ -333,6 +337,8 @@ function createInitialStore(): StoreSnapshot {
     payments: {},
     paymentSubmissions: {},
     paymentAuditLogs: {},
+    shippingPayments: {},
+    shippingPaymentAuditLogs: {},
     commissionRules,
     payouts: {},
     refunds: {},
@@ -375,6 +381,8 @@ function loadLocalStore(): StoreSnapshot {
       parsed.payments = parsed.payments || {};
       parsed.paymentSubmissions = parsed.paymentSubmissions || {};
       parsed.paymentAuditLogs = parsed.paymentAuditLogs || {};
+      parsed.shippingPayments = parsed.shippingPayments || {};
+      parsed.shippingPaymentAuditLogs = parsed.shippingPaymentAuditLogs || {};
       parsed.commissionRules = parsed.commissionRules || {};
       parsed.payouts = parsed.payouts || {};
       parsed.refunds = parsed.refunds || {};
@@ -816,6 +824,8 @@ export async function initializeStoreWithFirestore(): Promise<StoreSnapshot> {
       ['payments', 'payments'],
       ['payment_submissions', 'paymentSubmissions'],
       ['payment_audit_logs', 'paymentAuditLogs'],
+      ['shipping_payments', 'shippingPayments'],
+      ['shipping_payment_audit_logs', 'shippingPaymentAuditLogs'],
       ['commission_rules', 'commissionRules'],
       ['coupons', 'coupons'],
       ['shipping_zones', 'shippingZones'],
@@ -1224,6 +1234,43 @@ export async function upsertSuborder(suborder: SupplierSuborder): Promise<Suppli
   await saveStore(store);
   await syncCollectionToFirestore('suborders', suborder.id, suborder);
   return suborder;
+}
+
+export async function upsertShippingPayment(
+  payment: ShippingPaymentRecord
+): Promise<ShippingPaymentRecord> {
+  const store = await getStore();
+  store.shippingPayments[payment.id] = payment;
+  await saveStore(store);
+  await syncCollectionToFirestore('shipping_payments', payment.id, payment);
+  return payment;
+}
+
+export async function appendShippingPaymentAuditLog(params: {
+  shippingPaymentId: string;
+  suborderId: string;
+  orderId: string;
+  action: ShippingPaymentAuditLog['action'];
+  previousStatus: string;
+  newStatus: string;
+  actorUid: string;
+  actorEmail: string;
+  actorRole: string;
+  transactionId?: string;
+  reason?: string;
+  metadata?: Record<string, string | number | boolean>;
+}): Promise<ShippingPaymentAuditLog> {
+  const store = await getStore();
+  const id = `spal_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+  const entry: ShippingPaymentAuditLog = {
+    id,
+    ...params,
+    createdAt: new Date().toISOString(),
+  };
+  store.shippingPaymentAuditLogs[id] = entry;
+  await saveStore(store);
+  await syncCollectionToFirestore('shipping_payment_audit_logs', id, entry);
+  return entry;
 }
 
 export async function upsertPayment(payment: PaymentTransaction): Promise<PaymentTransaction> {

@@ -56,6 +56,8 @@ import {
   Product,
   RefundRequest,
   ShippingZone,
+  ShippingPaymentRecord,
+  ShippingPaymentAuditLog,
   SupplierIntegrationStatus,
   SupplierPayout,
   SupplierProfile,
@@ -114,6 +116,8 @@ interface AdminPayload {
   orders: Order[];
   suborders: SupplierSuborder[];
   payments: PaymentTransaction[];
+  shippingPayments?: ShippingPaymentRecord[];
+  shippingPaymentAuditLogs?: ShippingPaymentAuditLog[];
   paymentSubmissions: PaymentSubmission[];
   paymentAuditLogs: PaymentAuditLog[];
   payouts: SupplierPayout[];
@@ -2066,6 +2070,7 @@ export const AdminDashboard: React.FC = () => {
             })()}
 
             {tab === 'orders' && (
+              <>
               <div className="bg-white border border-[#E5E2DC] p-4 sm:p-6 space-y-4">
                 <h3 className="font-editorial text-xl sm:text-2xl font-semibold">
                   {t('verifyTxTitle')} & {t('adminOrdersTab')} ({data.orders.length})
@@ -2305,6 +2310,144 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              <section className="bg-white border border-[#E5E2DC] p-4 sm:p-6 space-y-4">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <h3 className="font-editorial text-xl sm:text-2xl font-semibold">
+                    Supplier Shipping Payments ({(data.shippingPayments || []).length})
+                  </h3>
+                  <span className="text-[11px] text-neutral-500">
+                    Separate from product payments
+                  </span>
+                </div>
+
+                {(data.shippingPayments || []).length === 0 ? (
+                  <p className="text-xs text-neutral-500">
+                    No negotiated shipping payments recorded yet.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {(data.shippingPayments || []).map((payment) => (
+                      <article
+                        key={payment.id}
+                        className="border border-[#E5E2DC] bg-[#FAF9F6] p-3 sm:p-4 space-y-2 text-xs"
+                      >
+                        <div className="flex flex-wrap justify-between items-center gap-2">
+                          <strong className="font-mono-tabular break-all">
+                            {payment.id}
+                          </strong>
+                          <span className="font-semibold">{payment.status}</span>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          <p>Order: <strong className="font-mono-tabular">{payment.orderId}</strong></p>
+                          <p>Suborder: <strong className="font-mono-tabular">{payment.suborderId}</strong></p>
+                          <p>Supplier ID: <strong>{payment.supplierId}</strong></p>
+                          <p>Customer ID: <strong>{payment.customerId}</strong></p>
+                          <p>
+                            Agreed amount:{' '}
+                            <strong className="tabular-nums">
+                              {payment.currency} {payment.agreedAmount.toLocaleString()}
+                            </strong>
+                          </p>
+                          <p>Payment method: <strong>{payment.paymentMethod}</strong></p>
+                          <p>Recipient: <strong>{payment.recipientName}</strong></p>
+                          <p>Recipient account: <strong className="break-all">{payment.recipientAccount}</strong></p>
+                        </div>
+                        {payment.paymentInstructions && (
+                          <p className="text-neutral-700 break-words">
+                            Instructions: {payment.paymentInstructions}
+                          </p>
+                        )}
+                        <div className="border-t border-[#E5E2DC] pt-2 space-y-1">
+                          <p>
+                            Transaction ID:{' '}
+                            <strong className="font-mono-tabular break-all">
+                              {payment.transactionId || 'Not submitted'}
+                            </strong>
+                          </p>
+                          <p>Created: {new Date(payment.createdAt).toLocaleString()}</p>
+                          {payment.customerSubmittedAt && (
+                            <p>Customer submitted: {new Date(payment.customerSubmittedAt).toLocaleString()}</p>
+                          )}
+                          {payment.supplierReviewedAt && (
+                            <p>Supplier reviewed: {new Date(payment.supplierReviewedAt).toLocaleString()}</p>
+                          )}
+                          {payment.supplierReviewedByUid && (
+                            <p>Reviewed by supplier UID: {payment.supplierReviewedByUid}</p>
+                          )}
+                          {payment.supplierReviewReason && (
+                            <p className="text-red-700">
+                              Review reason: {payment.supplierReviewReason}
+                            </p>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="bg-white border border-[#E5E2DC] p-4 sm:p-6 space-y-4">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <h3 className="font-editorial text-xl sm:text-2xl font-semibold">
+                    Shipping Payment Audit History
+                  </h3>
+                  <span className="text-[11px] text-neutral-500">
+                    Latest {(data.shippingPaymentAuditLogs || []).length} events
+                  </span>
+                </div>
+
+                {(data.shippingPaymentAuditLogs || []).length === 0 ? (
+                  <p className="text-xs text-neutral-500">
+                    No shipping payment audit events recorded yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {(data.shippingPaymentAuditLogs || []).map((log) => (
+                      <article
+                        key={log.id}
+                        className="border border-[#E5E2DC] p-3 text-xs space-y-1"
+                      >
+                        <div className="flex flex-wrap justify-between gap-2">
+                          <strong>{log.action}</strong>
+                          <span className="text-neutral-500">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p>
+                          Payment: <strong className="font-mono-tabular break-all">{log.shippingPaymentId}</strong>
+                        </p>
+                        <p>
+                          Order / Suborder:{' '}
+                          <span className="font-mono-tabular">{log.orderId}</span>
+                          {' / '}
+                          <span className="font-mono-tabular">{log.suborderId}</span>
+                        </p>
+                        <p>
+                          Status: <strong>{log.previousStatus}</strong>
+                          {' → '}
+                          <strong>{log.newStatus}</strong>
+                        </p>
+                        <p>
+                          Actor: <strong>{log.actorEmail || log.actorUid}</strong>
+                          {' · Role: '}
+                          <strong>{log.actorRole}</strong>
+                        </p>
+                        {log.transactionId && (
+                          <p>
+                            Transaction ID:{' '}
+                            <strong className="font-mono-tabular break-all">{log.transactionId}</strong>
+                          </p>
+                        )}
+                        {log.reason && (
+                          <p className="text-red-700 break-words">Reason: {log.reason}</p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+              </>
             )}
 
             {tab === 'finance' && (

@@ -91,6 +91,8 @@ const LEGACY_TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     subtotal: 'Subtotal',
     promoDiscount: 'Promo Discount',
     estimatedShipping: 'Estimated Shipping',
+    negotiatedShippingNotice:
+      'Shipping cost for some items is not included. The supplier will contact you to agree on the delivery fee, which you will pay directly to the supplier.',
     total: 'Total',
     proceedToCheckout: 'Proceed to Checkout',
     back: 'Back',
@@ -415,6 +417,8 @@ const LEGACY_TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     subtotal: 'Jumla Ndogo',
     promoDiscount: 'Punguzo',
     estimatedShipping: 'Usafirishaji',
+    negotiatedShippingNotice:
+      'Gharama ya usafirishaji ya baadhi ya bidhaa haijajumuishwa. Supplier atawasiliana nawe mkubaliane gharama ya delivery, kisha utamlipa moja kwa moja.',
     total: 'Jumla Kuu',
     proceedToCheckout: 'Endelea Kulipia',
     back: 'Rudi',

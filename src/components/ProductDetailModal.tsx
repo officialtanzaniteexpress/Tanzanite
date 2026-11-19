@@ -104,6 +104,7 @@ export const ProductDetailModal: React.FC = () => {
       unitPriceUsd: selectedProduct.sellingPriceUsd,
       wholesalePriceUsd: selectedProduct.wholesalePriceUsd,
       shippingFeeUsd: selectedProduct.shippingFeeUsd,
+      shippingFeeMode: selectedProduct.shippingFeeMode || 'FIXED',
       estimatedDaysMin: selectedProduct.estimatedDaysMin,
       estimatedDaysMax: selectedProduct.estimatedDaysMax,
       shippingOriginCountry: selectedProduct.shippingOriginCountry,

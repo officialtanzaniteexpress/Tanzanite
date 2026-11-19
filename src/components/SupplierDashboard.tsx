@@ -61,6 +61,7 @@ import {
   SupplierPayout,
   SupplierProfile,
   SupplierSuborder,
+  ShippingPaymentRecord,
 } from '../types/marketplace';
 import { SafeImage } from './SafeImage';
 
@@ -87,6 +88,7 @@ interface SupplierWorkspaceData {
   supplier: SupplierProfile;
   products: Product[];
   suborders: SupplierSuborder[];
+  shippingPayments?: ShippingPaymentRecord[];
   payouts: SupplierPayout[];
   refunds: RefundRequest[];
   reviews: Review[];
@@ -254,6 +256,7 @@ export const SupplierDashboard: React.FC = () => {
     baseSku: `MIK-${Date.now().toString().slice(-4)}`,
     shippingOriginCountry: 'Tanzania',
     shippingFeeUsd: '5',
+    shippingFeeMode: 'FIXED' as 'FIXED' | 'CONTACT_CUSTOMER',
     estimatedDaysMin: '2',
     estimatedDaysMax: '5',
     shippingNotes: '',
@@ -278,6 +281,16 @@ export const SupplierDashboard: React.FC = () => {
   const [trackingInputs, setTrackingInputs] = useState<
     Record<string, { carrierName: string; trackingNumber: string; trackingUrl: string }>
   >({});
+  const [shippingAgreementForms, setShippingAgreementForms] = useState<Record<string, {
+    agreedAmount: string;
+    currency: 'USD' | 'TZS';
+    paymentMethod: string;
+    recipientName: string;
+    recipientAccount: string;
+    paymentInstructions: string;
+  }>>({});
+  const [shippingReviewReasons, setShippingReviewReasons] = useState<Record<string, string>>({});
+  const [shippingActionSuborderId, setShippingActionSuborderId] = useState<string | null>(null);
 
   // Payout request
   const [payoutAmount, setPayoutAmount] = useState('');
@@ -584,6 +597,7 @@ export const SupplierDashboard: React.FC = () => {
       baseSku: code,
       shippingOriginCountry: mySupplier.country || 'Tanzania',
       shippingFeeUsd: '5',
+      shippingFeeMode: 'FIXED',
       estimatedDaysMin: '2',
       estimatedDaysMax: '5',
       shippingNotes: '',
@@ -618,6 +632,7 @@ export const SupplierDashboard: React.FC = () => {
       baseSku: p.variants[0]?.sku.split('-')[0] || 'MIK',
       shippingOriginCountry: p.shippingOriginCountry || mySupplier.country,
       shippingFeeUsd: String(p.shippingFeeUsd),
+      shippingFeeMode: p.shippingFeeMode || 'FIXED',
       estimatedDaysMin: String(p.estimatedDaysMin),
       estimatedDaysMax: String(p.estimatedDaysMax),
       shippingNotes: p.shippingNotes || '',
@@ -830,6 +845,7 @@ export const SupplierDashboard: React.FC = () => {
         estimatedDaysMin: Math.max(1, Number(manualForm.estimatedDaysMin) || 2),
         estimatedDaysMax: Math.max(1, Number(manualForm.estimatedDaysMax) || 5),
         shippingFeeUsd: Math.max(0, Number(manualForm.shippingFeeUsd) || 0),
+        shippingFeeMode: manualForm.shippingFeeMode,
         shippingNotes: manualForm.shippingNotes.trim() || undefined,
         returnPolicySummary: manualForm.returnPolicySummary.trim(),
         variants: variantRows,
@@ -1004,6 +1020,77 @@ export const SupplierDashboard: React.FC = () => {
       toast(t('supplier.deletedProductToast'), 'success');
     } catch (err: any) {
       toast(err.message || t('supplier.deleteProductFailed'), 'error');
+    }
+  };
+
+  const handleSaveShippingAgreement = async (suborderId: string) => {
+    const form = shippingAgreementForms[suborderId];
+    if (!form) {
+      toast('Jaza taarifa za makubaliano ya shipping kwanza.', 'error');
+      return;
+    }
+
+    const agreedAmount = Number(form.agreedAmount);
+    if (!Number.isFinite(agreedAmount) || agreedAmount <= 0) {
+      toast('Weka gharama sahihi ya shipping iliyo zaidi ya sifuri.', 'error');
+      return;
+    }
+
+    if (!form.paymentMethod.trim() || !form.recipientName.trim() || !form.recipientAccount.trim()) {
+      toast('Jaza njia ya malipo, jina la mpokeaji na akaunti/namba.', 'error');
+      return;
+    }
+
+    setShippingActionSuborderId(suborderId);
+    try {
+      await apiFetch(`/api/supplier/suborders/${encodeURIComponent(suborderId)}/shipping-payment/agreement`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          agreedAmount,
+          currency: form.currency,
+          paymentMethod: form.paymentMethod.trim(),
+          recipientName: form.recipientName.trim(),
+          recipientAccount: form.recipientAccount.trim(),
+          paymentInstructions: form.paymentInstructions.trim(),
+        }),
+      });
+      await loadWorkspace();
+      toast('Makubaliano ya shipping yamehifadhiwa.', 'success');
+    } catch (err: any) {
+      toast(err.message || 'Imeshindikana kuhifadhi makubaliano ya shipping.', 'error');
+    } finally {
+      setShippingActionSuborderId(null);
+    }
+  };
+
+  const handleReviewShippingPayment = async (
+    suborderId: string,
+    decision: 'CONFIRM' | 'REJECT'
+  ) => {
+    const reason = (shippingReviewReasons[suborderId] || '').trim();
+    if (decision === 'REJECT' && reason.length < 3) {
+      toast('Andika sababu ya kukataa transaction ID (angalau herufi 3).', 'error');
+      return;
+    }
+
+    setShippingActionSuborderId(suborderId);
+    try {
+      await apiFetch(`/api/supplier/suborders/${encodeURIComponent(suborderId)}/shipping-payment/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ decision, ...(decision === 'REJECT' ? { reason } : {}) }),
+      });
+      await loadWorkspace();
+      setShippingReviewReasons((prev) => ({ ...prev, [suborderId]: '' }));
+      toast(
+        decision === 'CONFIRM'
+          ? 'Malipo ya shipping yamethibitishwa.'
+          : 'Transaction ID imekataliwa na sababu imehifadhiwa.',
+        'success'
+      );
+    } catch (err: any) {
+      toast(err.message || 'Imeshindikana kuhakiki malipo ya shipping.', 'error');
+    } finally {
+      setShippingActionSuborderId(null);
     }
   };
 
@@ -1932,6 +2019,27 @@ export const SupplierDashboard: React.FC = () => {
                             className="w-full border border-[#E5E2DC] px-2.5 py-1.5 bg-[#FAF9F6]"
                           />
                         </div>
+                        <div className="sm:col-span-2 lg:col-span-4">
+                          <label className="block text-[11px] text-neutral-600 mb-1">
+                            Shipping arrangement
+                          </label>
+                          <select
+                            value={manualForm.shippingFeeMode}
+                            onChange={(e) =>
+                              setManualForm({
+                                ...manualForm,
+                                shippingFeeMode: e.target.value as 'FIXED' | 'CONTACT_CUSTOMER',
+                              })
+                            }
+                            className="w-full border border-[#E5E2DC] px-2.5 py-2 bg-[#FAF9F6]"
+                          >
+                            <option value="FIXED">Fixed shipping fee — customer pays at checkout</option>
+                            <option value="CONTACT_CUSTOMER">Agree with customer — supplier collects shipping separately</option>
+                          </select>
+                          <p className="text-[11px] text-neutral-500 mt-1">
+                            For direct agreement, contact the customer after the order and agree on delivery cost.
+                          </p>
+                        </div>
                         <div>
                           <label className="block text-[11px] text-neutral-600 mb-1">
                             {t('supplier.productShippingFeeLabel')}
@@ -2651,6 +2759,17 @@ export const SupplierDashboard: React.FC = () => {
                         sub.status === 'Refunded' ||
                         sub.paymentStatus === 'REFUNDED';
                       const showTimeline = Boolean(expandedHistory[sub.id]);
+                      const shippingPayment = (workspace.shippingPayments || []).find(
+                        (payment) => payment.suborderId === sub.id
+                      );
+                      const shippingForm = shippingAgreementForms[sub.id] || {
+                        agreedAmount: shippingPayment ? String(shippingPayment.agreedAmount) : '',
+                        currency: shippingPayment?.currency || 'TZS',
+                        paymentMethod: shippingPayment?.paymentMethod || '',
+                        recipientName: shippingPayment?.recipientName || '',
+                        recipientAccount: shippingPayment?.recipientAccount || '',
+                        paymentInstructions: shippingPayment?.paymentInstructions || '',
+                      };
 
                       return (
                         <div key={sub.id} className="bg-white border border-[#E5E2DC] p-5 space-y-3 text-xs">
@@ -2725,6 +2844,170 @@ export const SupplierDashboard: React.FC = () => {
                               );
                             })}
                           </div>
+
+                          {sub.shippingFeeMode === 'CONTACT_CUSTOMER' && (
+                            <div className="border border-[#D8DCEB] bg-[#FAFAFE] p-3 space-y-3">
+                              <div>
+                                <p className="font-semibold text-[#111322]">Shipping payment — makubaliano ya moja kwa moja</p>
+                                <p className="text-neutral-600 mt-1">
+                                  Wasiliana na mteja, kubaliana gharama ya usafirishaji, kisha weka taarifa sahihi za malipo hapa.
+                                </p>
+                              </div>
+
+                              {shippingPayment && (
+                                <div className="grid sm:grid-cols-2 gap-2 text-neutral-700 bg-white border border-[#E5E2DC] p-2">
+                                  <p>Kiasi: <strong>{shippingPayment.currency} {shippingPayment.agreedAmount.toLocaleString()}</strong></p>
+                                  <p>Njia: <strong>{shippingPayment.paymentMethod}</strong></p>
+                                  <p>Mpokeaji: <strong>{shippingPayment.recipientName}</strong></p>
+                                  <p>Akaunti/namba: <strong className="break-all">{shippingPayment.recipientAccount}</strong></p>
+                                  {shippingPayment.paymentInstructions && (
+                                    <p className="sm:col-span-2 whitespace-pre-wrap">Maelekezo: {shippingPayment.paymentInstructions}</p>
+                                  )}
+                                  <p className="sm:col-span-2">
+                                    Hali: <strong>{shippingPayment.status.replaceAll('_', ' ')}</strong>
+                                  </p>
+                                </div>
+                              )}
+
+                              {(!shippingPayment || shippingPayment.status === 'AWAITING_CUSTOMER_PAYMENT' || shippingPayment.status === 'REJECTED') && (
+                                <div className="grid sm:grid-cols-2 gap-2">
+                                  <label className="space-y-1">
+                                    <span className="block text-neutral-600">Gharama ya shipping</span>
+                                    <input
+                                      type="number"
+                                      min="0.01"
+                                      step="0.01"
+                                      value={shippingForm.agreedAmount}
+                                      onChange={(e) => setShippingAgreementForms((prev) => ({
+                                        ...prev,
+                                        [sub.id]: { ...shippingForm, agreedAmount: e.target.value },
+                                      }))}
+                                      placeholder="Mfano: 15000"
+                                      className="w-full border border-[#E5E2DC] bg-white px-3 py-2"
+                                    />
+                                  </label>
+                                  <label className="space-y-1">
+                                    <span className="block text-neutral-600">Currency</span>
+                                    <select
+                                      value={shippingForm.currency}
+                                      onChange={(e) => setShippingAgreementForms((prev) => ({
+                                        ...prev,
+                                        [sub.id]: { ...shippingForm, currency: e.target.value as 'USD' | 'TZS' },
+                                      }))}
+                                      className="w-full border border-[#E5E2DC] bg-white px-3 py-2"
+                                    >
+                                      <option value="TZS">TZS</option>
+                                      <option value="USD">USD</option>
+                                    </select>
+                                  </label>
+                                  <label className="space-y-1">
+                                    <span className="block text-neutral-600">Njia ya malipo</span>
+                                    <input
+                                      value={shippingForm.paymentMethod}
+                                      onChange={(e) => setShippingAgreementForms((prev) => ({
+                                        ...prev,
+                                        [sub.id]: { ...shippingForm, paymentMethod: e.target.value },
+                                      }))}
+                                      placeholder="M-Pesa, Tigo Pesa, Airtel Money, Benki..."
+                                      className="w-full border border-[#E5E2DC] bg-white px-3 py-2"
+                                    />
+                                  </label>
+                                  <label className="space-y-1">
+                                    <span className="block text-neutral-600">Jina la mpokeaji</span>
+                                    <input
+                                      value={shippingForm.recipientName}
+                                      onChange={(e) => setShippingAgreementForms((prev) => ({
+                                        ...prev,
+                                        [sub.id]: { ...shippingForm, recipientName: e.target.value },
+                                      }))}
+                                      placeholder="Jina la mwenye akaunti"
+                                      className="w-full border border-[#E5E2DC] bg-white px-3 py-2"
+                                    />
+                                  </label>
+                                  <label className="space-y-1 sm:col-span-2">
+                                    <span className="block text-neutral-600">Namba/akaunti ya kupokea malipo</span>
+                                    <input
+                                      value={shippingForm.recipientAccount}
+                                      onChange={(e) => setShippingAgreementForms((prev) => ({
+                                        ...prev,
+                                        [sub.id]: { ...shippingForm, recipientAccount: e.target.value },
+                                      }))}
+                                      placeholder="Namba ya simu au akaunti ya benki"
+                                      className="w-full border border-[#E5E2DC] bg-white px-3 py-2"
+                                    />
+                                  </label>
+                                  <label className="space-y-1 sm:col-span-2">
+                                    <span className="block text-neutral-600">Maelekezo ya malipo (hiari)</span>
+                                    <textarea
+                                      rows={2}
+                                      value={shippingForm.paymentInstructions}
+                                      onChange={(e) => setShippingAgreementForms((prev) => ({
+                                        ...prev,
+                                        [sub.id]: { ...shippingForm, paymentInstructions: e.target.value },
+                                      }))}
+                                      placeholder="Maelekezo ya ziada kwa mteja..."
+                                      className="w-full border border-[#E5E2DC] bg-white px-3 py-2"
+                                    />
+                                  </label>
+                                  <div className="sm:col-span-2 flex justify-end">
+                                    <button
+                                      type="button"
+                                      disabled={shippingActionSuborderId === sub.id}
+                                      onClick={() => handleSaveShippingAgreement(sub.id)}
+                                      className="bg-[#2B3A9F] text-white px-4 py-2 font-semibold disabled:opacity-50"
+                                    >
+                                      {shippingActionSuborderId === sub.id ? 'Inahifadhi...' : shippingPayment ? 'Sasisha makubaliano' : 'Hifadhi makubaliano'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {shippingPayment?.status === 'SUBMITTED' && (
+                                <div className="bg-white border border-blue-200 p-3 space-y-2">
+                                  <p className="font-semibold text-blue-800">Mteja ametuma transaction ID — hakiki kupokea fedha kwanza.</p>
+                                  <p>Transaction ID: <strong className="font-mono break-all">{shippingPayment.transactionId}</strong></p>
+                                  {shippingPayment.customerSubmittedAt && (
+                                    <p className="text-neutral-500">Imetumwa: {formatLocalizedDateTime(shippingPayment.customerSubmittedAt, language)}</p>
+                                  )}
+                                  <label className="block space-y-1">
+                                    <span className="text-neutral-600">Sababu ya kukataa (ijazwe ukikataa)</span>
+                                    <textarea
+                                      rows={2}
+                                      value={shippingReviewReasons[sub.id] || ''}
+                                      onChange={(e) => setShippingReviewReasons((prev) => ({ ...prev, [sub.id]: e.target.value }))}
+                                      placeholder="Eleza kwa nini transaction ID haijathibitishwa..."
+                                      className="w-full border border-[#E5E2DC] px-3 py-2"
+                                    />
+                                  </label>
+                                  <div className="flex flex-wrap justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      disabled={shippingActionSuborderId === sub.id}
+                                      onClick={() => handleReviewShippingPayment(sub.id, 'REJECT')}
+                                      className="border border-red-300 text-red-700 px-4 py-2 font-semibold disabled:opacity-50"
+                                    >
+                                      Kataa transaction ID
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={shippingActionSuborderId === sub.id}
+                                      onClick={() => handleReviewShippingPayment(sub.id, 'CONFIRM')}
+                                      className="bg-emerald-700 text-white px-4 py-2 font-semibold disabled:opacity-50"
+                                    >
+                                      Thibitisha malipo
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {shippingPayment?.status === 'CONFIRMED' && (
+                                <p className="text-emerald-700 font-semibold">Malipo ya shipping yamethibitishwa.</p>
+                              )}
+                              {shippingPayment?.status === 'REJECTED' && (
+                                <p className="text-red-700">Malipo ya awali yamekataliwa: {shippingPayment.supplierReviewReason || 'Sababu haijatolewa.'} Mteja anaweza kutuma transaction ID mpya baada ya kulipa tena.</p>
+                              )}
+                            </div>
+                          )}
 
                           <div className="text-neutral-500 flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-[#E5E2DC]">
                             <span>
